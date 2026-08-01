@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crowz — Minecraft Developer &amp; Server Owner</title>
+  <meta name="description" content="Crowz — Minecraft plugin developer and owner of Enclave SMP. 18+ free, verified plugins. Discord: Crowzzw">
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👁️</text></svg>">
+</head>
+<body>
+  <div id="scrollProgress" aria-hidden="true"></div>
+  <canvas id="mesh" aria-hidden="true"></canvas>
+  <canvas id="particles" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="glow" id="glow" aria-hidden="true"></div>
+
+  <nav class="topnav" id="topnav">
+    <a href="#hero" class="nav-brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
+      </span>
+      Crowz
+    </a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#plugins">Plugins</a>
+      <a href="#server">Server</a>
+      <a href="#socials">Contact</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="hero">
+    <div class="banner-wrap">
+      <img src="images/banner.gif" alt="" class="banner-img" id="bannerImg">
+      <div class="banner-overlay"></div>
+    </div>
+    <div class="hero-content">
+      <div class="avatar-wrap">
+        <div class="avatar-ring-outer"></div>
+        <img src="images/pfp.gif" alt="Crowz" class="avatar-img" id="avatarImg">
+        <div class="avatar-glow"></div>
+      </div>
+      <p class="hero-eyebrow">CrowzDevelopment</p>
+      <h1 class="hero-name" id="heroName">Crowz</h1>
+      <p class="hero-tagline"><span id="typewriter"></span><span class="cursor">|</span></p>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-num" data-count="18">0</span><span class="stat-label">Plugins</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num" data-count="100">0</span><span class="stat-label">% Free</span></div>
+        <div class="stat-divider"></div>
+        <div class="stat"><span class="stat-num" data-count="5">0</span><span class="stat-label">Categories</span></div>
+      </div>
+      <div class="hero-actions">
+        <a href="#plugins" class="btn btn-primary">View Plugins
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+        <a href="#server" class="btn btn-outline">Join Enclave SMP</a>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true">
+      <div class="scroll-mouse"><div class="scroll-dot"></div></div>
+    </div>
+  </header>
+
+  <section class="section" id="about">
+    <div class="container">
+      <h2 class="section-title reveal"><span class="accent">01</span> About Me</h2>
+      <div class="about-grid">
+        <div class="about-card glass tilt reveal">
+          <div class="about-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Plugin Developer</h3>
+          <p>Building production-grade Minecraft plugins — security, performance, PvP, and SMP systems with clean architecture and modern APIs.</p>
+        </div>
+        <div class="about-card glass tilt reveal">
+          <div class="about-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <h3>Community Driven</h3>
+          <p>Running the Enclave SMP — a survival multiplayer server built on trust, creativity, and community. Always welcoming new members.</p>
+        </div>
+        <div class="about-card glass tilt reveal">
+          <div class="about-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Verified &amp; Free</h3>
+          <p>Every plugin is SHA-256 verified, free to use, and maintained. No paywalls, no premium tiers — quality content for everyone.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="plugins">
+    <div class="divider-top" aria-hidden="true"></div>
+    <div class="container">
+      <h2 class="section-title reveal"><span class="accent">02</span> Plugins</h2>
+      <p class="section-sub reveal">18 verified plugins built for Paper 1.21+ — all free, no paywalls.</p>
+      <div class="filter-row reveal">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="Plugin">Plugins</button>
+        <button class="filter-btn" data-filter="Client">Client Mods</button>
+      </div>
+      <div class="plugin-grid" id="pluginGrid"></div>
+      <div class="section-cta reveal">
+        <a href="https://crowz-plugins.vercel.app" target="_blank" class="btn btn-primary btn-lg">
+          Open Plugin Hub
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="server">
+    <div class="container">
+      <h2 class="section-title reveal"><span class="accent">03</span> Server</h2>
+      <p class="section-sub reveal">A survival experience powered entirely by my own plugins.</p>
+      <div class="server-card glass tilt reveal">
+        <div class="server-header">
+          <div class="server-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="18" r="1" fill="currentColor"/></svg>
+          </div>
+          <div>
+            <h3 class="server-name">Enclave SMP</h3>
+            <span class="server-status online">Online</span>
+          </div>
+        </div>
+        <div class="server-details">
+          <div class="server-detail">
+            <span class="detail-label">Type</span>
+            <span class="detail-value">Survival Multiplayer</span>
+          </div>
+          <div class="server-detail">
+            <span class="detail-label">Version</span>
+            <span class="detail-value">Paper 1.21.x</span>
+          </div>
+          <div class="server-detail">
+            <span class="detail-label">Access</span>
+            <span class="detail-value">Whitelist via Discord</span>
+          </div>
+          <div class="server-detail">
+            <span class="detail-label">Stack</span>
+            <span class="detail-value">18 custom plugins</span>
+          </div>
+        </div>
+        <div class="server-features">
+          <span class="feature-tag">Custom Shop</span>
+          <span class="feature-tag">Teams &amp; Homes</span>
+          <span class="feature-tag">PvP Events</span>
+          <span class="feature-tag">KOTH</span>
+          <span class="feature-tag">Voice Chat</span>
+          <span class="feature-tag">Anti-Cheat</span>
+        </div>
+        <div class="server-actions">
+          <a href="https://discord.gg/NG2hyARph" target="_blank" class="btn btn-primary btn-lg">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561 19.9312 19.9312 0 005.9932 3.0294.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276c-.5829.3159-1.1945.579-1.873.8914a.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286 19.8975 19.8975 0 006.0023-3.0294.0771.0771 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286z"/></svg>
+            Join Enclave SMP
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="socials">
+    <div class="divider-top" aria-hidden="true"></div>
+    <div class="container">
+      <h2 class="section-title reveal"><span class="accent">04</span> Connect</h2>
+      <p class="section-sub reveal">Find me on social media or join the community.</p>
+      <div class="social-grid">
+        <a href="https://crowz-plugins.vercel.app" target="_blank" class="social-card glass tilt reveal">
+          <div class="social-icon website">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <div class="social-info">
+            <h3>Website</h3>
+            <span class="social-handle">crowz-plugins.vercel.app</span>
+          </div>
+          <svg class="social-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="https://discord.gg/NG2hyARph" target="_blank" class="social-card glass tilt reveal">
+          <div class="social-icon discord">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561 19.9312 19.9312 0 005.9932 3.0294.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276c-.5829.3159-1.1945.579-1.873.8914a.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286 19.8975 19.8975 0 006.0023-3.0294.0771.0771 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286z"/></svg>
+          </div>
+          <div class="social-info">
+            <h3>Discord</h3>
+            <span class="social-handle">Crowzzw</span>
+          </div>
+          <svg class="social-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@luv_4ace" target="_blank" class="social-card glass tilt reveal">
+          <div class="social-icon tiktok">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13.2a8.19 8.19 0 005.58 2.17v-3.44a4.85 4.85 0 01-2-.86 4.83 4.83 0 01-1.32-1.41c.22-.14.46-.27.7-.36z"/></svg>
+          </div>
+          <div class="social-info">
+            <h3>TikTok</h3>
+            <span class="social-handle">@luv_4ace</span>
+          </div>
+          <svg class="social-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span class="footer-brand">Crowz<span class="footer-dot">.</span></span>
+      <span class="footer-copy">&copy; 2026 CrowzDevelopment &middot; Free &amp; verified plugins for Paper 1.21+</span>
+    </div>
+  </footer>
+
+  <script src="plugins-data.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
