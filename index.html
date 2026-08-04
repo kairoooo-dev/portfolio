@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crowz — Minecraft Developer &amp; Server Owner</title>
-  <meta name="description" content="Crowz — Minecraft plugin developer and owner of Enclave SMP. 18+ free, verified plugins. Discord: Crowzzw">
+  <meta name="description" content="Crowz — Minecraft plugin developer and owner of Enclave SMP. 18+ free, verified plugins. i do sh*t RIGHT.">
   <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Pirata+One&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👁️</text></svg>">
 </head>
 <body>
@@ -42,7 +44,7 @@
         <img src="images/pfp.gif" alt="Crowz" class="avatar-img" id="avatarImg">
         <div class="avatar-glow"></div>
       </div>
-      <p class="hero-eyebrow">CrowzDevelopment</p>
+      <p class="hero-eyebrow">✦ CrowzDevelopment ✦</p>
       <h1 class="hero-name" id="heroName">Crowz</h1>
       <p class="hero-tagline"><span id="typewriter"></span><span class="cursor">|</span></p>
       <div class="hero-stats">
@@ -66,7 +68,8 @@
 
   <section class="section" id="about">
     <div class="container">
-      <h2 class="section-title reveal"><span class="accent">01</span> About Me</h2>
+      <h2 class="section-title reveal"><span class="title-star" aria-hidden="true">✦</span> About Me</h2>
+      <p class="section-lead reveal">Hey — I'm <strong>Crowz</strong>, a Minecraft plugin developer who builds things right the first time. I create production-grade plugins and run Enclave SMP, a survival server powered purely by my own code. No paywalls, no shortcuts — just clean, verified work.</p>
       <div class="about-grid">
         <div class="about-card glass tilt reveal">
           <div class="about-icon">
@@ -96,7 +99,7 @@
   <section class="section section-alt" id="plugins">
     <div class="divider-top" aria-hidden="true"></div>
     <div class="container">
-      <h2 class="section-title reveal"><span class="accent">02</span> Plugins</h2>
+      <h2 class="section-title reveal"><span class="title-star" aria-hidden="true">✦</span> Plugins</h2>
       <p class="section-sub reveal">18 verified plugins built for Paper 1.21+ — all free, no paywalls.</p>
       <div class="filter-row reveal">
         <button class="filter-btn active" data-filter="all">All</button>
@@ -115,7 +118,7 @@
 
   <section class="section" id="server">
     <div class="container">
-      <h2 class="section-title reveal"><span class="accent">03</span> Server</h2>
+      <h2 class="section-title reveal"><span class="title-star" aria-hidden="true">✦</span> Server</h2>
       <p class="section-sub reveal">A survival experience powered entirely by my own plugins.</p>
       <div class="server-card glass tilt reveal">
         <div class="server-header">
@@ -124,7 +127,7 @@
           </div>
           <div>
             <h3 class="server-name">Enclave SMP</h3>
-            <span class="server-status online">Online</span>
+            <span class="server-status offline">Offline</span>
           </div>
         </div>
         <div class="server-details">
@@ -145,6 +148,7 @@
             <span class="detail-value">18 custom plugins</span>
           </div>
         </div>
+        <p class="server-offline-note">Server is currently offline — the Discord is the fastest way to know when it's back up.</p>
         <div class="server-features">
           <span class="feature-tag">Custom Shop</span>
           <span class="feature-tag">Teams &amp; Homes</span>
@@ -166,7 +170,7 @@
   <section class="section section-alt" id="socials">
     <div class="divider-top" aria-hidden="true"></div>
     <div class="container">
-      <h2 class="section-title reveal"><span class="accent">04</span> Connect</h2>
+      <h2 class="section-title reveal"><span class="title-star" aria-hidden="true">✦</span> Connect</h2>
       <p class="section-sub reveal">Find me on social media or join the community.</p>
       <div class="social-grid">
         <a href="https://crowz-plugins.vercel.app" target="_blank" class="social-card glass tilt reveal">
@@ -205,10 +209,17 @@
 
   <footer class="footer">
     <div class="container footer-inner">
-      <span class="footer-brand">Crowz<span class="footer-dot">.</span></span>
+      <div class="footer-brand-col">
+        <span class="footer-brand">Crowz<span class="footer-dot">.</span></span>
+        <span class="footer-gothic">i do sh&#42;t RIGHT</span>
+      </div>
       <span class="footer-copy">&copy; 2026 CrowzDevelopment &middot; Free &amp; verified plugins for Paper 1.21+</span>
     </div>
   </footer>
+
+  <button class="music-toggle" id="musicToggle" aria-label="Toggle music &amp; sound" title="Toggle music &amp; sound">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  </button>
 
   <script src="plugins-data.js"></script>
   <script src="main.js"></script>
