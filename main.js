@@ -1,50 +1,8 @@
 /* ═══════════════════════════════════════════════════════
-   Crowz Portfolio — Effects, Stars & Sound
+   Crowz Portfolio — Stars & Chill Sound
    ═══════════════════════════════════════════════════════ */
 
-/* ── Mesh gradient background ─────────────────────── */
-(function initMesh() {
-  const c = document.getElementById('mesh');
-  if (!c || !c.getContext) return;
-  const ctx = c.getContext('2d');
-  const dpr = Math.min(devicePixelRatio || 1, 1.5);
-  let W, H;
-  function resize() {
-    W = window.innerWidth; H = window.innerHeight;
-    c.width = W * dpr; c.height = H * dpr;
-    c.style.width = W + 'px'; c.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  resize(); window.addEventListener('resize', resize);
-
-  const blobs = [
-    { x: .2, y: .3, r: 380, vx: .00018, vy: .00014, hue: '220,38,38' },
-    { x: .8, y: .65, r: 320, vx: -.00015, vy: -.0001, hue: '127,29,29' },
-    { x: .5, y: .85, r: 300, vx: .0001, vy: -.00012, hue: '60,9,9' }
-  ];
-  let t = 0;
-  function tick() {
-    requestAnimationFrame(tick);
-    t += .002;
-    ctx.clearRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'screen';
-    for (const b of blobs) {
-      b.x += b.vx * Math.sin(t * 3 + b.r);
-      b.y += b.vy * Math.cos(t * 2.4 + b.r);
-      if (b.x < -.1) b.x = 1.1; if (b.x > 1.1) b.x = -.1;
-      if (b.y < -.1) b.y = 1.1; if (b.y > 1.1) b.y = -.1;
-      const g = ctx.createRadialGradient(b.x * W, b.y * H, 0, b.x * W, b.y * H, b.r);
-      g.addColorStop(0, `rgba(${b.hue},.1)`);
-      g.addColorStop(1, `rgba(${b.hue},0)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(b.x * W - b.r, b.y * H - b.r, b.r * 2, b.r * 2);
-    }
-    ctx.globalCompositeOperation = 'source-over';
-  }
-  tick();
-})();
-
-/* ── Starfield particles (the stars stay. always.) ── */
+/* ── Starfield particles + mouse connection lines ── */
 (function initParticles() {
   const c = document.getElementById('particles');
   if (!c || !c.getContext) return;
@@ -63,26 +21,56 @@
   const N = Math.min(90, Math.floor(W * H / 16000));
   const stars = Array.from({ length: N }, () => ({
     x: Math.random() * W, y: Math.random() * H,
-    vx: (Math.random() - .5) * .12, vy: (Math.random() - .5) * .12,
     r: Math.random() * 1.6 + .4,
     base: .25 + Math.random() * .4,
     tw: .5 + Math.random() * 2.4,
     ph: Math.random() * Math.PI * 2,
     hot: Math.random() < .18
   }));
+
   let mx = -9999, my = -9999;
   document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; }, { passive: true });
+  document.addEventListener('mouseleave', () => { mx = -9999; my = -9999; }, { passive: true });
+
+  const LINK_R = 180;
   let frame = 0;
+
   function tick() {
     frame++;
     if (!reduced) requestAnimationFrame(tick);
     ctx.clearRect(0, 0, W, H);
     const time = performance.now() / 1000;
+
+    /* Connection lines first (under the stars) */
+    ctx.lineWidth = 1;
+    for (let i = 0; i < N; i++) {
+      const dx = stars[i].x - mx, dy = stars[i].y - my;
+      const dm = Math.sqrt(dx * dx + dy * dy);
+      if (dm < LINK_R && mx > -9000) {
+        const t = 1 - dm / LINK_R;
+        ctx.strokeStyle = `rgba(239,68,68,${.55 * t})`;
+        ctx.beginPath();
+        ctx.moveTo(stars[i].x, stars[i].y);
+        ctx.lineTo(mx, my);
+        ctx.stroke();
+        if (t > .75) drawRing(stars[i].x, stars[i].y, time);
+      }
+      if (frame % 2 === 0) {
+        for (let j = i + 1; j < N; j++) {
+          const sdx = stars[i].x - stars[j].x, sdy = stars[i].y - stars[j].y;
+          const dist = Math.sqrt(sdx * sdx + sdy * sdy);
+          if (dist < 100) {
+            ctx.strokeStyle = `rgba(248,113,113,${.09 * (1 - dist / 100)})`;
+            ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(stars[j].x, stars[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    /* The stars themselves (twinkling) */
     ctx.globalCompositeOperation = 'lighter';
     for (const s of stars) {
-      if (!reduced) { s.x += s.vx; s.y += s.vy; }
-      if (s.x < -4) s.x = W + 4; if (s.x > W + 4) s.x = -4;
-      if (s.y < -4) s.y = H + 4; if (s.y > H + 4) s.y = -4;
       const a = s.base + Math.sin(time * s.tw + s.ph) * s.base * .5;
       const r = s.r * (1 + Math.sin(time * s.tw + s.ph) * .18);
       ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
@@ -90,42 +78,17 @@
       ctx.fill();
     }
     ctx.globalCompositeOperation = 'source-over';
-    if (reduced) return;
-    if (frame % 2 === 0) {
-      for (let i = 0; i < N; i++) {
-        for (let j = i + 1; j < N; j++) {
-          const dx = stars[i].x - stars[j].x, dy = stars[i].y - stars[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 110) {
-            ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(stars[j].x, stars[j].y);
-            ctx.strokeStyle = `rgba(220,38,38,${.08 * (1 - dist / 110)})`; ctx.lineWidth = .5; ctx.stroke();
-          }
-        }
-        const dxm = stars[i].x - mx, dym = stars[i].y - my;
-        const dm = Math.sqrt(dxm * dxm + dym * dym);
-        if (dm < 150) {
-          ctx.beginPath(); ctx.moveTo(stars[i].x, stars[i].y); ctx.lineTo(mx, my);
-          ctx.strokeStyle = `rgba(239,68,68,${.3 * (1 - dm / 150)})`; ctx.lineWidth = .9; ctx.stroke();
-        }
-      }
-    }
   }
-  tick();
-})();
 
-/* ── Mouse glow ───────────────────────────────────── */
-(function initGlow() {
-  const glow = document.getElementById('glow');
-  if (!glow) return;
-  let tx = -999, ty = -999, x = -999, y = -999, raf = 0;
-  document.addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; }, { passive: true });
-  document.addEventListener('mouseleave', () => { glow.style.opacity = '0'; }, { passive: true });
-  document.addEventListener('mouseenter', () => { glow.style.opacity = '1'; }, { passive: true });
-  function tick() {
-    raf = requestAnimationFrame(tick);
-    x += (tx - x) * .12; y += (ty - y) * .12;
-    glow.style.transform = `translate(${x - 250}px, ${y - 250}px)`;
+  function drawRing(x, y, time) {
+    const rr = 10 + Math.sin(time * 6) * 3;
+    ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(252,165,165,.5)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
+
+  if (reduced) { tick(); return; }
   tick();
 })();
 
@@ -164,7 +127,7 @@
     'Owner of Enclave SMP',
     'Security & Performance',
     '18+ Free Verified Plugins',
-    'i do sh*t RIGHT'
+    'i get sh*t DONE'
   ];
   let pi = 0, ci = 0, deleting = false;
   function loop() {
@@ -306,27 +269,33 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 })();
 
 /* ═══════════════════════════════════════════════════════
-   Audio — procedural ambient music + sound effects.
-   Everything is synthesized with Web Audio: no files
-   needed, works fully offline.
+   Audio — chill procedural ambiance + soft SFX.
+   Synthesized with Web Audio: no files, works offline.
    ═══════════════════════════════════════════════════════ */
 (function initAudio() {
   const toggle = document.getElementById('musicToggle');
   let ctx = null, master = null, musicBus = null, sfxBus = null;
   let musicOn = false, sfxOn = true;
   let schedulerId = null, nextNoteTime = 0, step = 0;
+  let playing = false;
 
-  const SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25]; // A minor pentatonic + extras
-  const PAD_CHORDS = [[220, 329.63, 440], [174.61, 261.63, 349.23], [196, 293.66, 392]]; // Am · F · G
+  /* Chill progression — Cmaj7 · Am7 · Fmaj7 · G — as [root, chord] voice freqs */
+  const CHORDS = [
+    [130.81, 164.81, 196.00, 246.94], /* Cmaj7 */
+    [110.00, 164.81, 196.00, 246.94], /* Am7  */
+    [ 87.31, 130.81, 164.81, 220.00], /* Fmaj7 */
+    [ 98.00, 146.83, 196.00, 246.94]  /* G6   */
+  ];
+  const PENTA = [220, 261.63, 293.66, 329.63, 392, 440, 523.25]; /* A minor pentatonic */
 
   function unlock() {
     if (ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     ctx = new AC();
-    master = ctx.createGain(); master.gain.value = .9; master.connect(ctx.destination);
-    musicBus = ctx.createGain(); musicBus.gain.value = .5; musicBus.connect(master);
-    sfxBus = ctx.createGain(); sfxBus.gain.value = .75; sfxBus.connect(master);
+    master = ctx.createGain(); master.gain.value = .8; master.connect(ctx.destination);
+    musicBus = ctx.createGain(); musicBus.gain.value = .6; musicBus.connect(master);
+    sfxBus = ctx.createGain(); sfxBus.gain.value = .6; sfxBus.connect(master);
 
     document.removeEventListener('pointerdown', unlock);
     document.removeEventListener('keydown', unlock);
@@ -335,120 +304,136 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   document.addEventListener('pointerdown', unlock);
   document.addEventListener('keydown', unlock);
 
-  /* ── Sound effects ─────────────────────────────── */
-  function blip(freq, dur, gain, type, when) {
+  /* ── Soft SFX ───────────────────────────────────── */
+  function tone(freq, dur, gain, type, when, glideTo) {
     const t = when || ctx.currentTime;
-    const o = ctx.createOscillator(); o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+    const o = ctx.createOscillator(); o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(gain, t + .008);
+    g.gain.exponentialRampToValueAtTime(gain, t + .01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(sfxBus);
-    o.start(t); o.stop(t + dur + .02);
+    o.start(t); o.stop(t + dur + .05);
   }
-  function sClick() { if (!ctx || !sfxOn) return; blip(620, .12, .08, 'triangle'); blip(880, .1, .05, 'sine', ctx.currentTime + .01); }
-  function sHover() { if (!ctx || !sfxOn) return; blip(980, .06, .03, 'sine'); }
-  function sWhoosh() { if (!ctx || !sfxOn) return; blip(340, .18, .04, 'triangle'); }
+  function sClick() { if (!ctx || !sfxOn) return; tone(560, .14, .05, 'triangle'); }
+  function sHover() { if (!ctx || !sfxOn) return; tone(760, .07, .016, 'sine'); }
+  function sWhoosh() { if (!ctx || !sfxOn) return; tone(420, .22, .025, 'sine', ctx.currentTime, 220); }
 
   function bindSfx() {
     let lastHover = 0;
     document.addEventListener('click', e => {
       if (e.target.closest('a, button')) sClick();
-      if (e.target === toggle) return;
     });
     document.addEventListener('mouseover', e => {
       if (!e.target.closest) return;
       if (e.target.closest('a, button, .tilt')) {
         const now = performance.now();
-        if (now - lastHover > 90) { sHover(); lastHover = now; }
+        if (now - lastHover > 100) { sHover(); lastHover = now; }
       }
     });
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-      a.addEventListener('click', () => sWhoosh());
-    });
+    document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', () => sWhoosh()));
   }
 
-  /* ── Ambient music scheduler (lookahead) ────────── */
-  const STEP_DUR = .33; // seconds per 8th note at ~91 BPM
-  const LOOKAHEAD = .5;
+  /* ── Chill music scheduler ──────────────────────── */
+  const STEP = .42;        /* slow 8th-note feel   */
+  const BAR = 8;           /* steps per bar        */
+  const LOOKAHEAD = .6;
 
-  function playPad(chord) {
+  function pad(chordKeys, dur) {
     if (!ctx) return;
-    for (let i = 0; i < chord.length; i++) {
-      const o = ctx.createOscillator(); o.type = 'triangle';
-      o.frequency.value = chord[i];
-      o.detune.value = (i - 1) * 7;
-      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 520;
+    for (let i = 0; i < chordKeys.length; i++) {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = chordKeys[i];
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 480;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, nextNoteTime);
-      g.gain.exponentialRampToValueAtTime(.045, nextNoteTime + 1.2);
-      g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + PAD_LEN);
-      o.connect(f); f.connect(g); g.connect(musicBus);
-      o.start(nextNoteTime); o.stop(nextNoteTime + PAD_LEN + .1);
+      g.gain.exponentialRampToValueAtTime(.035, nextNoteTime + 2.2);
+      g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + dur);
+      o.connect(lp); lp.connect(g); g.connect(musicBus);
+      o.start(nextNoteTime); o.stop(nextNoteTime + dur + .2);
     }
   }
-  const PAD_LEN = 8; // 8 seconds per chord
 
-  function playArp(freq) {
-    if (!ctx) return;
-    const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = freq;
-    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, nextNoteTime);
-    g.gain.exponentialRampToValueAtTime(.028, nextNoteTime + .01);
-    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .22);
-    o.connect(f); f.connect(g); g.connect(musicBus);
-    o.start(nextNoteTime); o.stop(nextNoteTime + .3);
-  }
-
-  function playBass(freq) {
+  function bass(freq) {
     if (!ctx) return;
     const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq / 2;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, nextNoteTime);
-    g.gain.exponentialRampToValueAtTime(.06, nextNoteTime + .03);
-    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .9);
+    g.gain.exponentialRampToValueAtTime(.05, nextNoteTime + .04);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + 1.6);
     o.connect(g); g.connect(musicBus);
-    o.start(nextNoteTime); o.stop(nextNoteTime + 1);
+    o.start(nextNoteTime); o.stop(nextNoteTime + 1.8);
+  }
+
+  function pluck(freq) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, nextNoteTime);
+    g.gain.exponentialRampToValueAtTime(.05, nextNoteTime + .012);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .7);
+    o.connect(g); g.connect(musicBus);
+    o.start(nextNoteTime); o.stop(nextNoteTime + .8);
+  }
+
+  function shimmer(freq) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, nextNoteTime);
+    g.gain.exponentialRampToValueAtTime(.014, nextNoteTime + .05);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + 1.4);
+    o.connect(g); g.connect(musicBus);
+    o.start(nextNoteTime); o.stop(nextNoteTime + 1.5);
   }
 
   function scheduleStep() {
     if (!musicOn || !ctx) return;
     while (nextNoteTime < ctx.currentTime + LOOKAHEAD) {
-      const total = step % 48;
-      if (total === 0) playPad(PAD_CHORDS[Math.floor(step / 48) % PAD_CHORDS.length]);
-      if (total === 0 || total === 24) playBass(SCALE[0]);
-      if (step % 3 === 0) playArp(SCALE[(step * 2) % SCALE.length] * (total % 2 ? 1 : 2));
-      if (step % 7 === 0) blip(SCALE[(step / 7 | 0) % SCALE.length] * 4, .25, .012, 'sine', nextNoteTime);
-      nextNoteTime += STEP_DUR;
+      const pos = step % (BAR * 8);      /* 8-bar loop */
+      const bar = Math.floor(step / BAR) % 4;
+
+      if (step % BAR === 0) pad(CHORDS[bar], BAR * 3 * STEP);   /* chord per bar, 3-bar tail */
+      if (step % BAR === 0) bass(CHORDS[bar][0]);
+
+      if (pos % 2 === 0 && pos > 2) {
+        if (Math.random() < .55) pluck(PENTA[Math.floor(Math.random() * 5)] * (Math.random() < .3 ? 2 : 1));
+      }
+      if (pos === BAR * 3 + 4 || pos === BAR * 7 + 4) shimmer([440, 880][Math.floor(Math.random() * 2)]);
+
+      nextNoteTime += STEP;
       step++;
     }
   }
 
   function startMusic() {
     if (!ctx || musicOn) return;
-    musicOn = true;
+    musicOn = true; playing = true;
     if (ctx.state === 'suspended') ctx.resume();
-    nextNoteTime = ctx.currentTime + .1;
+    nextNoteTime = ctx.currentTime + .15;
     step = 0;
     schedulerId = setInterval(scheduleStep, 100);
     toggle.classList.add('on');
   }
   function stopMusic() {
     if (schedulerId) { clearInterval(schedulerId); schedulerId = null; }
-    musicOn = false;
+    musicOn = false; playing = false;
     toggle.classList.remove('on');
   }
 
   if (toggle) {
     toggle.addEventListener('click', () => {
-      if (!ctx) { unlock(); }
+      if (!ctx) unlock();
       if (musicOn) stopMusic(); else startMusic();
     });
   }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && musicOn) stopMusic();
-    else if (!document.hidden && musicOn && ctx) { nextNoteTime = ctx.currentTime + .1; schedulerId = setInterval(scheduleStep, 100); }
+    else if (!document.hidden && playing && ctx) {
+      nextNoteTime = ctx.currentTime + .15;
+      schedulerId = setInterval(scheduleStep, 100);
+    }
   });
 })();
