@@ -356,6 +356,11 @@
   }
 
   function drawLogo(s, p, er, hot, t) {
+    const spin = rot + t * .4;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(spin);
+    ctx.translate(-p.x, -p.y);
     ctx.save();
     ctx.beginPath();
     ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
@@ -379,6 +384,7 @@
     ctx.arc(p.x - er * .35, p.y - er * .35, er * .22, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,.7)';
     ctx.fill();
+    ctx.restore();
     if (hot) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, er + 5 + Math.sin(t * 6) * 2.5, 0, Math.PI * 2);
@@ -386,9 +392,9 @@
       ctx.strokeStyle = 'rgba(255,255,255,.45)';
       ctx.stroke();
     }
-    ctx.font = Math.round(Math.max(9, unit * .08)) + "px 'JetBrains Mono', monospace";
+    ctx.font = Math.round(Math.max(8, unit * .075)) + "px 'JetBrains Mono', monospace";
     ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
-    ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .08));
+    ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(8, unit * .075));
   }
 
   function draw(t) {
@@ -436,7 +442,7 @@
     }
 
     const hotCenter = hover === HOVER_CENTER;
-    const cer = .19 * unit * (hotCenter ? 1.12 : 1);
+    const cer = .155 * unit * (hotCenter ? 1.12 : 1);
     ctx.strokeStyle = 'rgba(220,38,38,.65)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -448,7 +454,7 @@
       const s = TIPS[i];
       const p = tipPos(s);
       const hot = i === hover;
-      const er = .135 * unit * (hot ? 1.2 : 1) * (1 + Math.sin(t * 1.6 + i) * .04);
+      const er = .105 * unit * (hot ? 1.25 : 1) * (1 + Math.sin(t * 1.6 + i) * .04);
       drawLogo(s, p, er, hot, t);
     }
   }
@@ -505,8 +511,8 @@
     const my = e.clientY - rect.top;
     let best = -1, bestD = Infinity;
     const spots = [
-      ...TIPS.map((s, i) => ({ i, p: tipPos(s), r: Math.max(8, .135 * unit) + 10 })),
-      { i: HOVER_CENTER, p: { x: cx, y: cy }, r: Math.max(10, .19 * unit) + 10 }
+      ...TIPS.map((s, i) => ({ i, p: tipPos(s), r: Math.max(7, .105 * unit) + 10 })),
+      { i: HOVER_CENTER, p: { x: cx, y: cy }, r: Math.max(9, .155 * unit) + 10 }
     ];
     for (const spot of spots) {
       const d = Math.hypot(spot.p.x - mx, spot.p.y - my);
