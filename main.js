@@ -1,6 +1,53 @@
 /* ═══════════════════════════════════════════════════════
-   Crowz Portfolio — Stars & Chill Sound
+   Crowz Portfolio — Loader, Stars & Chill Sound
    ═══════════════════════════════════════════════════════ */
+
+/* ── Loading / enter screen ───────────────────────── */
+(function initLoader() {
+  const loader = document.getElementById('loader');
+  if (!loader) return;
+  const enter = document.getElementById('loaderEnter');
+  const bar = document.getElementById('loaderBar');
+  let loaded = false, entered = false;
+
+  function enable() {
+    if (loaded) return;
+    loaded = true;
+    if (enter) { enter.classList.add('ready'); enter.focus(); }
+  }
+
+  const MIN_MS = 1400;
+  const minWait = new Promise(r => setTimeout(r, MIN_MS));
+  const pageLoad = new Promise(r => {
+    if (document.readyState === 'complete') r();
+    else window.addEventListener('load', r, { once: true });
+  });
+  Promise.all([minWait, pageLoad]).then(enable);
+
+  /* progress bar, transform only (no layout thrash) */
+  const start = performance.now();
+  (function prog(now) {
+    const p = Math.min((now - start) / MIN_MS, 1);
+    if (bar) bar.style.transform = `scaleX(${p})`;
+    if (p < 1 && !loaded) requestAnimationFrame(prog);
+  })(start);
+
+  function enterSite() {
+    if (!loaded || entered) return;
+    entered = true;
+    if (window.CrowzAudio) window.CrowzAudio.start();
+    loader.classList.add('loader-hide');
+    document.documentElement.classList.remove('locked');
+    setTimeout(() => loader.remove(), 600);
+  }
+
+  if (enter) enter.addEventListener('click', enterSite);
+  loader.addEventListener('click', enterSite);
+  window.addEventListener('keydown', e => {
+    if (loaded && (e.key === 'Enter' || e.key === ' ')) enterSite();
+  });
+  document.documentElement.classList.add('locked');
+})();
 
 /* ── Starfield particles + mouse connection lines ── */
 (function initParticles() {
@@ -199,10 +246,10 @@
     return `
       <div class="plugin-card glass tilt" data-type="${esc(p.type)}" data-name="${esc(p.name.toLowerCase())}">
         <div class="plugin-top">
-          <div class="plugin-icon" style="color:${color}">${icon}</div>
           <span class="plugin-type-badge">${esc(p.type)} &middot; v${esc(p.version)}</span>
         </div>
         <div class="plugin-meta">
+          <span class="plugin-icon" style="color:${color}">${icon}</span>
           <h3 class="plugin-name">${esc(p.name)}</h3>
           <span class="plugin-cat" style="background:${color}20;color:${color}">${esc(p.category)}</span>
         </div>
@@ -422,11 +469,14 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     toggle.classList.remove('on');
   }
 
+  window.CrowzAudio = {
+    start() { unlock(); startMusic(); },
+    stop() { stopMusic(); },
+    toggle() { if (musicOn) stopMusic(); else { unlock(); startMusic(); } }
+  };
+
   if (toggle) {
-    toggle.addEventListener('click', () => {
-      if (!ctx) unlock();
-      if (musicOn) stopMusic(); else startMusic();
-    });
+    toggle.addEventListener('click', () => window.CrowzAudio.toggle());
   }
 
   document.addEventListener('visibilitychange', () => {

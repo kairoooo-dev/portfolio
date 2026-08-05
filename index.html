@@ -6,12 +6,22 @@
   <title>Crowz — Minecraft Developer &amp; Server Owner</title>
   <meta name="description" content="Crowz — Minecraft plugin developer and owner of Enclave SMP. 18+ free, verified plugins. i do sh*t RIGHT.">
   <link rel="stylesheet" href="style.css">
+  <script>document.documentElement.classList.add('js');</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Pirata+One&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👁️</text></svg>">
 </head>
 <body>
+  <div id="loader" role="dialog" aria-modal="true" aria-label="Welcome">
+    <div class="loader-inner">
+      <div class="loader-brand">Crowz<span class="loader-dot">.</span></div>
+      <div class="loader-track" aria-hidden="true"><div class="loader-bar" id="loaderBar"></div></div>
+      <button class="loader-enter" id="loaderEnter" aria-label="Enter site">Enter</button>
+      <p class="loader-hint">tap to enter &amp; start the music</p>
+    </div>
+  </div>
+
   <div id="scrollProgress" aria-hidden="true"></div>
   <canvas id="particles" aria-hidden="true"></canvas>
   <div class="noise" aria-hidden="true"></div>
@@ -38,13 +48,11 @@
     </div>
     <div class="hero-content">
       <div class="avatar-wrap">
-        <div class="avatar-ring-outer"></div>
         <img src="images/pfp.gif" alt="Crowz" class="avatar-img" id="avatarImg">
       </div>
-      <p class="hero-eyebrow">✦ CrowzDevelopment ✦</p>
       <h1 class="hero-name" id="heroName">Crowz</h1>
       <p class="hero-gothic">i get sh&#42;t DONE</p>
-      <p class="hero-tagline"><span id="typewriter"></span><span class="cursor">|</span></p>
+      <p class="hero-tagline"><span id="typewriter"></span></p>
       <div class="hero-stats">
         <div class="stat"><span class="stat-num" data-count="18">0</span><span class="stat-label">Plugins</span></div>
         <div class="stat-divider"></div>
@@ -67,28 +75,34 @@
   <section class="section" id="about">
     <div class="container">
       <h2 class="section-title reveal"><span class="title-star" aria-hidden="true">✦</span> About Me</h2>
-      <p class="section-lead reveal">Hey — I'm <strong>Crowz</strong>, a Minecraft plugin developer who builds things right the first time. I create production-grade plugins and run Enclave SMP, a survival server powered purely by my own code. No paywalls, no shortcuts — just clean, verified work.</p>
+      <p class="section-lead reveal">Hey, I'm <strong>Crowz</strong>. A Minecraft plugin developer who builds things right the first time. I create production-grade plugins and run Enclave SMP, a survival server powered purely by my own code, with no paywalls and no shortcuts.</p>
       <div class="about-grid">
         <div class="about-card glass tilt reveal">
-          <div class="about-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          <div class="about-head">
+            <span class="about-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </span>
+            <h3>Plugin Developer</h3>
           </div>
-          <h3>Plugin Developer</h3>
-          <p>Building production-grade Minecraft plugins — security, performance, PvP, and SMP systems with clean architecture and modern APIs.</p>
+          <p>Building production-grade Minecraft plugins for security, performance, PvP, and SMP systems with clean architecture and modern APIs.</p>
         </div>
         <div class="about-card glass tilt reveal">
-          <div class="about-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          <div class="about-head">
+            <span class="about-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </span>
+            <h3>Community Driven</h3>
           </div>
-          <h3>Community Driven</h3>
-          <p>Running the Enclave SMP — a survival multiplayer server built on trust, creativity, and community. Always welcoming new members.</p>
+          <p>Running the Enclave SMP, a survival multiplayer server built on trust, creativity, and community. Always welcoming new members.</p>
         </div>
         <div class="about-card glass tilt reveal">
-          <div class="about-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div class="about-head">
+            <span class="about-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <h3>Verified &amp; Free</h3>
           </div>
-          <h3>Verified &amp; Free</h3>
-          <p>Every plugin is SHA-256 verified, free to use, and maintained. No paywalls, no premium tiers — quality content for everyone.</p>
+          <p>Every plugin is SHA-256 verified, free to use, and maintained. No paywalls, no premium tiers, just quality content for everyone.</p>
         </div>
       </div>
     </div>
@@ -146,7 +160,7 @@
             <span class="detail-value">18 custom plugins</span>
           </div>
         </div>
-        <p class="server-offline-note">Server is currently offline — the Discord is the fastest way to know when it's back up.</p>
+        <p class="server-offline-note">Server is currently offline. The Discord is the fastest way to know when it's back up.</p>
         <div class="server-features">
           <span class="feature-tag">Custom Shop</span>
           <span class="feature-tag">Teams &amp; Homes</span>
