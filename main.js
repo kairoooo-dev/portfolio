@@ -308,19 +308,12 @@
     s.imgEl.src = s.img;
   });
 
-  let W = 0, H = 0, cx = 0, cy = 0, baseU = 0, unit = 0, zoom = 1;
-  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1;
-  const pointers = new Map();
-  let pinchDist = 0;
-  const MINZ = .6, MAXZ = 1.7;
+  let W = 0, H = 0, cx = 0, cy = 0, unit = 0;
+  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1, lastSrot = 0;
+  const pointers = new Set();
+  const SPIN = .12;
   const t0 = performance.now();
   const trails = DOTS.map(() => []);
-
-  function applyZoom() { unit = baseU * zoom; }
-  function zoomBy(f) {
-    zoom = Math.min(MAXZ, Math.max(MINZ, zoom * f));
-    applyZoom();
-  }
 
   function resize() {
     const rect = wrap.getBoundingClientRect();
@@ -330,25 +323,24 @@
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cx = W / 2; cy = H / 2;
-    baseU = Math.min(W, H) / 2;
-    applyZoom();
+    unit = Math.min(W, H) / 2;
   }
   resize();
   window.addEventListener('resize', resize);
 
   function wob(t, i) { return Math.sin(t * .4 + i * 2.1) * .05; }
 
-  function tipPos(s) {
-    const ang = ORBITALS[s.orb].tilt + (s.side ? Math.PI : 0);
+  function tipPos(s, srot) {
+    const ang = ORBITALS[s.orb].tilt + (s.side ? Math.PI : 0) + srot;
     return { x: cx + Math.cos(ang) * .58 * unit, y: cy + Math.sin(ang) * .58 * unit };
   }
 
-  function dotPos(o, phase, t) {
+  function dotPos(o, phase, t, srot) {
     const a = .58 * unit, b = .25 * unit;
-    const th = phase + o.speed * t + rot;
+    const th = phase + o.speed * t + srot;
     const ex = a * Math.cos(th);
     const ey = b * Math.sin(th);
-    const tilt = o.tilt + rot + wob(t, ORBITALS.indexOf(o));
+    const tilt = o.tilt + srot + wob(t, ORBITALS.indexOf(o));
     return {
       x: cx + ex * Math.cos(tilt) - ey * Math.sin(tilt),
       y: cy + ex * Math.sin(tilt) + ey * Math.cos(tilt)
@@ -356,11 +348,6 @@
   }
 
   function drawLogo(s, p, er, hot, t) {
-    const spin = rot + t * .4;
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(spin);
-    ctx.translate(-p.x, -p.y);
     ctx.save();
     ctx.beginPath();
     ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
@@ -384,7 +371,6 @@
     ctx.arc(p.x - er * .35, p.y - er * .35, er * .22, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,.7)';
     ctx.fill();
-    ctx.restore();
     if (hot) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, er + 5 + Math.sin(t * 6) * 2.5, 0, Math.PI * 2);
@@ -397,17 +383,17 @@
     ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(8, unit * .075));
   }
 
-  function draw(t) {
+  function draw(t, srot) {
     ctx.clearRect(0, 0, W, H);
 
     for (let i = 0; i < ORBITALS.length; i++) {
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + rot + wob(t, i), 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + srot + wob(t, i), 0, Math.PI * 2);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(255,255,255,.08)';
       ctx.stroke();
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + rot + wob(t, i) + .04, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + srot + wob(t, i) + .04, 0, Math.PI * 2);
       ctx.lineWidth = .5;
       ctx.strokeStyle = 'rgba(255,255,255,.04)';
       ctx.stroke();
@@ -415,7 +401,7 @@
 
     for (let i = 0; i < DOTS.length; i++) {
       const d = DOTS[i];
-      const p = dotPos(d, d.phase, t);
+      const p = dotPos(d, d.phase, t, srot);
       if (!reduced) {
         trails[i].push({ x: p.x, y: p.y });
         if (trails[i].length > 12) trails[i].shift();
@@ -452,7 +438,7 @@
 
     for (let i = 0; i < TIPS.length; i++) {
       const s = TIPS[i];
-      const p = tipPos(s);
+      const p = tipPos(s, srot);
       const hot = i === hover;
       const er = .105 * unit * (hot ? 1.25 : 1) * (1 + Math.sin(t * 1.6 + i) * .04);
       drawLogo(s, p, er, hot, t);
@@ -462,26 +448,20 @@
   function loop(now) {
     requestAnimationFrame(loop);
     const t = reduced ? 0 : (now - t0) / 1000;
+    const srot = rot + t * SPIN;
+    lastSrot = srot;
     if (!dragging) {
       rot += vel;
       vel *= .96;
       if (Math.abs(vel) < .0004) vel = 0;
     }
-    draw(t);
+    draw(t, srot);
   }
   requestAnimationFrame(loop);
 
   canvas.addEventListener('pointerdown', e => {
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 2) {
-      dragging = false;
-      canvas.classList.remove('grabbing');
-      pinchDist = Math.hypot(
-        [...pointers.values()][0].x - [...pointers.values()][1].x,
-        [...pointers.values()][0].y - [...pointers.values()][1].y
-      );
-      return;
-    }
+    pointers.add(e.pointerId);
+    if (pointers.size >= 2) return;
     dragging = true;
     vel = 0;
     lastX = e.clientX;
@@ -489,16 +469,6 @@
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', e => {
-    if (pointers.has(e.pointerId)) {
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    }
-    if (pointers.size === 2) {
-      const [a, b] = [...pointers.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinchDist > 0 && d > 0) zoomBy(d / pinchDist);
-      pinchDist = d;
-      return;
-    }
     if (dragging) {
       const dx = e.clientX - lastX;
       rot += dx * .006;
@@ -511,7 +481,7 @@
     const my = e.clientY - rect.top;
     let best = -1, bestD = Infinity;
     const spots = [
-      ...TIPS.map((s, i) => ({ i, p: tipPos(s), r: Math.max(7, .105 * unit) + 10 })),
+      ...TIPS.map((s, i) => ({ i, p: tipPos(s, lastSrot), r: Math.max(7, .105 * unit) + 10 })),
       { i: HOVER_CENTER, p: { x: cx, y: cy }, r: Math.max(9, .155 * unit) + 10 }
     ];
     for (const spot of spots) {
@@ -523,7 +493,6 @@
   });
   function endPointer(e) {
     pointers.delete(e.pointerId);
-    pinchDist = 0;
     if (pointers.size === 0) {
       dragging = false;
       canvas.classList.remove('grabbing');
@@ -534,15 +503,9 @@
   canvas.addEventListener('pointerleave', () => {
     if (!dragging) hover = -1;
   });
-  canvas.addEventListener('wheel', e => {
-    e.preventDefault();
-    zoomBy(Math.exp(-e.deltaY * .0012));
-  }, { passive: false });
   canvas.addEventListener('dblclick', () => {
-    zoom = 1;
     rot = 0;
     vel = 0;
-    applyZoom();
   });
 })();
 
