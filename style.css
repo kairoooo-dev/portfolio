@@ -67,27 +67,20 @@ button { font-family: inherit; cursor: pointer; }
 }
 .loader-inner {
   position: relative; z-index: 1;
-  text-align: center; width: min(360px, 86vw);
+  text-align: center; width: min(560px, 88vw);
 }
 .loader-version {
   font-family: var(--mono); font-size: .7rem; color: var(--text2);
-  letter-spacing: .14em; text-transform: uppercase; margin-bottom: 24px;
+  letter-spacing: .14em; text-transform: uppercase; margin-bottom: 26px;
 }
 .loader-vtag { color: var(--accent); font-size: .6rem; margin-right: 6px; }
-.loader-brand {
-  font-family: var(--serif); font-weight: 900; letter-spacing: -.01em;
-  font-size: 3.2rem; color: var(--text); line-height: 1;
+.loader-pixels {
+  display: block; margin: 0 auto; image-rendering: pixelated;
+  cursor: default;
 }
-.loader-letter {
-  display: inline-block; opacity: 0; transform: translateY(26px);
-  animation: letterIn .7s cubic-bezier(.22,1,.36,1) forwards;
-  animation-delay: calc(var(--i) * 65ms + 120ms);
-}
-@keyframes letterIn { to { opacity: 1; transform: none; } }
-.loader-dot { color: var(--accent); }
 .loader-gothic {
-  font-family: var(--gothic); font-size: 1.35rem; color: var(--accent3);
-  letter-spacing: .12em; line-height: 1.2; margin-top: 10px;
+  font-family: var(--gothic); font-size: 1.4rem; color: var(--accent3);
+  letter-spacing: .12em; line-height: 1.2; margin-top: 14px;
   opacity: 0; transform: translateY(14px);
   animation: fadeInUp .8s ease-out forwards;
   animation-delay: .7s;
@@ -98,7 +91,7 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--text2);
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--surface);
-  padding: 14px 18px; margin: 30px auto 20px;
+  padding: 12px 18px; margin: 26px auto 20px;
   overflow: hidden; white-space: nowrap;
 }
 .boot-row { display: flex; align-items: baseline; gap: 8px; opacity: 0; transform: translateY(6px); transition: opacity .3s ease, transform .3s ease; }
@@ -106,22 +99,27 @@ button { font-family: inherit; cursor: pointer; }
 .boot-pad { flex: 1; border-bottom: 1px dotted rgba(255, 255, 255, .16); margin: 0 2px; transform: translateY(-3px); }
 .boot-ok { color: var(--accent3); }
 .boot-ok.ready-line { color: var(--accent); }
-.loader-track {
-  height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px;
-  margin: 30px auto 10px; overflow: hidden;
+
+/* XP-style segmented bar */
+.loader-seg {
+  display: flex; gap: 3px; margin-bottom: 10px; height: 10px;
 }
-.loader-bar {
-  height: 100%; width: 100%; background: var(--accent);
-  transform: scaleX(0); transform-origin: left center;
+.loader-seg i {
+  flex: 1; border-radius: 2px;
+  background: rgba(255, 255, 255, .07);
+  transition: background .25s ease;
 }
+.loader-seg i.on { background: var(--accent); }
 .loader-meta {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: baseline; justify-content: space-between;
   margin-bottom: 28px;
 }
-.loader-status, .loader-pct {
+.loader-status {
   font-family: var(--mono); font-size: .74rem; color: var(--text2);
 }
-.loader-pct { color: var(--accent3); }
+.loader-pct {
+  font-family: var(--mono); font-size: 1.15rem; font-weight: 700; color: var(--accent3);
+}
 .loader-enter {
   padding: 11px 34px; border-radius: var(--radius-sm);
   background: var(--accent); color: #fff; font-weight: 600;
@@ -134,6 +132,17 @@ button { font-family: inherit; cursor: pointer; }
 .loader-enter.ready:hover { transform: translateY(-2px); filter: brightness(1.08); }
 .loader-hint { margin-top: 14px; font-size: .72rem; color: var(--text2); }
 #loader.loader-hide { opacity: 0; pointer-events: none; }
+
+/* CRT scan sweep */
+.loader-scan {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent); opacity: .35; pointer-events: none;
+  animation: scanSweep 3.4s linear infinite;
+}
+@keyframes scanSweep {
+  0% { transform: translateY(-10px); }
+  100% { transform: translateY(100vh); }
+}
 html:not(.js) #loader { display: none; }
 html:not(.js) .music-toggle { display: none; }
 
