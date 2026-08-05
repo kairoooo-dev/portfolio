@@ -69,18 +69,16 @@ button { font-family: inherit; cursor: pointer; }
   position: relative; z-index: 1;
   text-align: center; width: min(560px, 88vw);
 }
-.loader-version {
-  font-family: var(--mono); font-size: .7rem; color: var(--text2);
-  letter-spacing: .14em; text-transform: uppercase; margin-bottom: 26px;
+.loader-brand {
+  font-family: var(--gothic); font-size: 4.2rem; color: var(--text);
+  letter-spacing: .04em; line-height: 1;
+  opacity: 0; transform: translateY(16px);
+  animation: fadeInUp .8s ease-out forwards;
 }
-.loader-vtag { color: var(--accent); font-size: .6rem; margin-right: 6px; }
-.loader-pixels {
-  display: block; margin: 0 auto; image-rendering: pixelated;
-  cursor: default;
-}
+.loader-dot { color: var(--accent); }
 .loader-gothic {
   font-family: var(--gothic); font-size: 1.4rem; color: var(--accent3);
-  letter-spacing: .12em; line-height: 1.2; margin-top: 14px;
+  letter-spacing: .12em; line-height: 1.2; margin-top: 10px;
   opacity: 0; transform: translateY(14px);
   animation: fadeInUp .8s ease-out forwards;
   animation-delay: .7s;
