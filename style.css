@@ -59,29 +59,59 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--bg);
   display: flex; align-items: center; justify-content: center;
   transition: opacity .5s ease;
+  overflow: hidden;
 }
-.loader-inner { text-align: center; width: min(320px, 82vw); }
+#loaderStars {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+.loader-inner {
+  position: relative; z-index: 1;
+  text-align: center; width: min(340px, 84vw);
+}
 .loader-brand {
   font-family: var(--serif); font-weight: 900; letter-spacing: -.01em;
-  font-size: 3rem; color: var(--text);
+  font-size: 3.2rem; color: var(--text); line-height: 1;
 }
+.loader-letter {
+  display: inline-block; opacity: 0; transform: translateY(26px);
+  animation: letterIn .7s cubic-bezier(.22,1,.36,1) forwards;
+  animation-delay: calc(var(--i) * 65ms + 120ms);
+}
+@keyframes letterIn { to { opacity: 1; transform: none; } }
 .loader-dot { color: var(--accent); }
+.loader-gothic {
+  font-family: var(--gothic); font-size: 1.35rem; color: var(--accent3);
+  letter-spacing: .12em; line-height: 1.2; margin-top: 10px;
+  opacity: 0; transform: translateY(14px);
+  animation: fadeInUp .8s ease-out forwards;
+  animation-delay: .7s;
+}
+@keyframes fadeInUp { to { opacity: 1; transform: none; } }
 .loader-track {
   height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px;
-  margin: 26px auto; overflow: hidden;
+  margin: 30px auto 10px; overflow: hidden;
 }
 .loader-bar {
   height: 100%; width: 100%; background: var(--accent);
   transform: scaleX(0); transform-origin: left center;
 }
+.loader-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 28px;
+}
+.loader-status, .loader-pct {
+  font-family: var(--mono); font-size: .74rem; color: var(--text2);
+}
+.loader-pct { color: var(--accent3); }
 .loader-enter {
   padding: 11px 34px; border-radius: var(--radius-sm);
   background: var(--accent); color: #fff; font-weight: 600;
   border: none; font-size: .9rem;
-  opacity: .5; cursor: default;
-  transition: opacity .3s ease, transform .2s ease;
+  opacity: 0; transform: translateY(14px); pointer-events: none;
+  transition: opacity .35s ease, transform .35s ease;
 }
-.loader-enter.ready { opacity: 1; cursor: pointer; }
+.loader-enter.ready { opacity: 1; transform: none; pointer-events: auto; }
 .loader-enter.ready:hover { transform: translateY(-2px); filter: brightness(1.08); }
 .loader-hint { margin-top: 14px; font-size: .72rem; color: var(--text2); }
 #loader.loader-hide { opacity: 0; pointer-events: none; }

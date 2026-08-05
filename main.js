@@ -8,15 +8,76 @@
   if (!loader) return;
   const enter = document.getElementById('loaderEnter');
   const bar = document.getElementById('loaderBar');
-  let loaded = false, entered = false;
+  const pctEl = document.getElementById('loaderPct');
+  const statusEl = document.getElementById('loaderStatus');
+  let loaded = false, entered = false, starsRaf = 0;
+
+  const MIN_MS = 1500;
+
+  const LINES = [
+    [0,   'booting crowz'],
+    [10,  'compiling plugins'],
+    [28,  'loading world chunks'],
+    [50,  'calibrating drop rates'],
+    [72,  'warming the spawn'],
+    [94,  'almost there']
+  ];
+
+  /* twinkling stars inside the loader */
+  const starsC = document.getElementById('loaderStars');
+  if (starsC && starsC.getContext) {
+    const sctx = starsC.getContext('2d');
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    let sw = 0, sh = 0;
+    function sresize() {
+      sw = loader.clientWidth; sh = loader.clientHeight;
+      starsC.width = sw * dpr; starsC.height = sh * dpr;
+      starsC.style.width = sw + 'px'; starsC.style.height = sh + 'px';
+      sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    sresize();
+    const sn = Math.min(70, Math.floor(sw * sh / 18000));
+    const sstars = Array.from({ length: sn }, () => ({
+      x: Math.random() * sw, y: Math.random() * sh,
+      r: Math.random() * 1.4 + .4,
+      base: .2 + Math.random() * .4,
+      tw: .4 + Math.random() * 2,
+      ph: Math.random() * Math.PI * 2,
+      hot: Math.random() < .2
+    }));
+    function sTick() {
+      starsRaf = requestAnimationFrame(sTick);
+      sctx.clearRect(0, 0, sw, sh);
+      const t = performance.now() / 1000;
+      sctx.globalCompositeOperation = 'lighter';
+      for (const s of sstars) {
+        const a = s.base + Math.sin(t * s.tw + s.ph) * s.base * .5;
+        sctx.beginPath(); sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        sctx.fillStyle = s.hot ? `rgba(252,165,165,${a})` : `rgba(234,234,242,${a})`;
+        sctx.fill();
+      }
+      sctx.globalCompositeOperation = 'source-over';
+    }
+    sTick();
+  }
+
+  function setProgress(p) {
+    if (bar) bar.style.transform = `scaleX(${p})`;
+    if (pctEl) pctEl.textContent = Math.round(p * 100) + '%';
+    for (let i = LINES.length - 1; i >= 0; i--) {
+      if (p * 100 >= LINES[i][0]) { setStatus(LINES[i][1]); break; }
+    }
+  }
+  function setStatus(text) { if (statusEl && statusEl.textContent !== text) statusEl.textContent = text; }
 
   function enable() {
     if (loaded) return;
     loaded = true;
+    setProgress(1);
+    setStatus('done, waiting on you');
     if (enter) { enter.classList.add('ready'); enter.focus(); }
   }
 
-  const MIN_MS = 1400;
   const minWait = new Promise(r => setTimeout(r, MIN_MS));
   const pageLoad = new Promise(r => {
     if (document.readyState === 'complete') r();
@@ -24,17 +85,20 @@
   });
   Promise.all([minWait, pageLoad]).then(enable);
 
-  /* progress bar, transform only (no layout thrash) */
+  /* eased progress toward 94% (jumps to 100 when enabled) */
   const start = performance.now();
+  const DUR = MIN_MS * .92;
   (function prog(now) {
-    const p = Math.min((now - start) / MIN_MS, 1);
-    if (bar) bar.style.transform = `scaleX(${p})`;
-    if (p < 1 && !loaded) requestAnimationFrame(prog);
+    const t = Math.min((now - start) / DUR, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    if (!loaded) setProgress(.94 * eased);
+    if (!loaded) requestAnimationFrame(prog);
   })(start);
 
   function enterSite() {
     if (!loaded || entered) return;
     entered = true;
+    if (starsRaf) cancelAnimationFrame(starsRaf);
     if (window.CrowzAudio) window.CrowzAudio.start();
     loader.classList.add('loader-hide');
     document.documentElement.classList.remove('locked');
