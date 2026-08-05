@@ -270,6 +270,135 @@
   tick();
 })();
 
+/* ── Skills solar system ──────────────────────────── */
+(function initSolarSystem() {
+  const canvas = document.getElementById('solarCanvas');
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wrap = canvas.parentElement;
+
+  const SKILLS = [
+    { name: 'Python',     short: 'Py',      ring: 1, color: '#4b8bbe' },
+    { name: 'Node.js',    short: 'Node',    ring: 1, color: '#68a063' },
+    { name: 'Java',       short: 'Java',    ring: 2, color: '#f89820' },
+    { name: 'JavaScript', short: 'JS',      ring: 2, color: '#f7df1e' },
+    { name: 'C++',        short: 'C++',     ring: 3, color: '#5c8dc7' },
+    { name: 'HTML',       short: 'HTML',    ring: 3, color: '#e44d26' },
+    { name: 'C#',         short: 'C#',      ring: 4, color: '#a45cc9' }
+  ];
+  const RING_SPEED = [0, .5, .38, .29, .22];
+  const RING_R = [0, .32, .46, .60, .74];
+
+  let W = 0, H = 0, cx = 0, cy = 0, unit = 0;
+  let rot = 0, dragging = false, lastX = 0, hover = -1;
+  const t0 = performance.now();
+
+  function resize() {
+    const rect = wrap.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width; H = rect.height;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W / 2; cy = H / 2;
+    unit = Math.min(W, H) / 2;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function planetPos(s, t) {
+    const ang = s.ring * 137.5 * Math.PI / 180 + rot + RING_SPEED[s.ring] * t;
+    return {
+      x: cx + Math.cos(ang) * RING_R[s.ring] * unit,
+      y: cy + Math.sin(ang) * RING_R[s.ring] * unit
+    };
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.lineWidth = 1;
+    for (let r = 1; r <= 4; r++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, RING_R[r] * unit, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,.09)';
+      ctx.stroke();
+    }
+
+    const pulse = 1 + Math.sin(t * 1.4) * .03;
+    const sr = 20 * unit / 90 * pulse;
+    ctx.beginPath(); ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+    ctx.fillStyle = '#dc2626';
+    ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, sr * .45, 0, Math.PI * 2);
+    ctx.fillStyle = '#0a0a10';
+    ctx.fill();
+    ctx.font = '600 ' + Math.round(Math.max(10, unit * .1)) + "px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fca5a5';
+    ctx.fillText('Crowz', cx, cy + sr + Math.max(10, unit * .085));
+
+    for (let i = 0; i < SKILLS.length; i++) {
+      const s = SKILLS[i];
+      const p = planetPos(s, t);
+      const pr = 12 * unit / 90;
+      const hot = i === hover;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pr * (hot ? 1.25 : 1), 0, Math.PI * 2);
+      ctx.fillStyle = s.color;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.stroke();
+      ctx.font = Math.round(Math.max(10, unit * .1)) + "px 'JetBrains Mono', monospace";
+      ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
+      ctx.fillText(unit < 190 ? s.short : s.name, p.x, p.y + pr + Math.max(10, unit * .085));
+    }
+  }
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const t = reduced ? 0 : (now - t0) / 1000;
+    draw(t);
+  }
+  requestAnimationFrame(loop);
+
+  canvas.addEventListener('pointerdown', e => {
+    dragging = true;
+    lastX = e.clientX;
+    canvas.classList.add('grabbing');
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (dragging) {
+      rot += (e.clientX - lastX) * .006;
+      lastX = e.clientX;
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    hover = -1;
+    const t = (performance.now() - t0) / 1000;
+    for (let i = 0; i < SKILLS.length; i++) {
+      const p = planetPos(SKILLS[i], t);
+      if (Math.hypot(p.x - mx, p.y - my) < 24) {
+        hover = i;
+        break;
+      }
+    }
+    canvas.style.cursor = hover >= 0 ? 'pointer' : 'grab';
+  });
+  canvas.addEventListener('pointerup', () => {
+    dragging = false;
+    canvas.classList.remove('grabbing');
+  });
+  canvas.addEventListener('pointerleave', () => {
+    if (!dragging) hover = -1;
+  });
+})();
+
 /* ── Scroll progress bar ──────────────────────────── */
 (function initScrollProgress() {
   const bar = document.getElementById('scrollProgress');
