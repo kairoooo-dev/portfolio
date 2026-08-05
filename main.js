@@ -847,7 +847,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 })();
 
 /* ═══════════════════════════════════════════════════════
-   Audio: chill procedural ambiance + soft SFX.
+   Audio: lazy reggae-pop groove + richer SFX.
    Synthesized with Web Audio: no files, works offline.
    ═══════════════════════════════════════════════════════ */
 (function initAudio() {
@@ -855,16 +855,16 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   let ctx = null, master = null, musicBus = null, sfxBus = null;
   let musicOn = false, sfxOn = true;
   let schedulerId = null, nextNoteTime = 0, step = 0;
-  let playing = false;
+  let playing = false, noiseBuf = null, lastLead = 2;
 
-  /* Chill progression: Cmaj7 · Am7 · Fmaj7 · G as [root, chord] voice freqs */
+  /* Sunny G-major loop: G · D · Em · C  as [root, 3rd, 5th, 7th] */
   const CHORDS = [
-    [130.81, 164.81, 196.00, 246.94], /* Cmaj7 */
-    [110.00, 164.81, 196.00, 246.94], /* Am7  */
-    [ 87.31, 130.81, 164.81, 220.00], /* Fmaj7 */
-    [ 98.00, 146.83, 196.00, 246.94]  /* G6   */
+    [196.00, 246.94, 293.66, 392.00],  /* G  */
+    [146.83, 185.00, 220.00, 293.66],  /* D  */
+    [164.81, 196.00, 246.94, 329.63],  /* Em */
+    [130.81, 196.00, 261.63, 329.63]   /* C  */
   ];
-  const PENTA = [220, 261.63, 293.66, 329.63, 392, 440, 523.25]; /* A minor pentatonic */
+  const LEAD = [392, 440, 493.88, 587.33, 659.25, 783.99]; /* G major pentatonic */
 
   function unlock() {
     if (ctx) return;
@@ -895,9 +895,40 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     o.connect(g); g.connect(sfxBus);
     o.start(t); o.stop(t + dur + .05);
   }
-  function sClick() { if (!ctx || !sfxOn) return; tone(560, .14, .05, 'triangle'); }
-  function sHover() { if (!ctx || !sfxOn) return; tone(760, .07, .016, 'sine'); }
-  function sWhoosh() { if (!ctx || !sfxOn) return; tone(420, .22, .025, 'sine', ctx.currentTime, 220); }
+  function noiseSrc() {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const s = ctx.createBufferSource();
+    s.buffer = noiseBuf;
+    return s;
+  }
+  function sClick() {
+    if (!ctx || !sfxOn) return;
+    tone(620, .05, .05, 'triangle');
+    tone(930, .09, .045, 'triangle', ctx.currentTime + .055);
+  }
+  function sHover() {
+    if (!ctx || !sfxOn) return;
+    tone(620 + Math.random() * 40, .1, .018, 'sine');
+    tone(1670, .06, .008, 'sine');
+  }
+  function sWhoosh() {
+    if (!ctx || !sfxOn) return;
+    const t = ctx.currentTime;
+    const src = noiseSrc();
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2;
+    f.frequency.setValueAtTime(350, t);
+    f.frequency.exponentialRampToValueAtTime(2200, t + .28);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(.07, t + .08);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + .3);
+    src.connect(f); f.connect(g); g.connect(sfxBus);
+    src.start(t); src.stop(t + .35);
+  }
 
   function bindSfx() {
     let lastHover = 0;
@@ -914,73 +945,118 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
     document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', () => sWhoosh()));
   }
 
-  /* ── Chill music scheduler ──────────────────────── */
-  const STEP = .42;        /* slow 8th-note feel   */
-  const BAR = 8;           /* steps per bar        */
-  const LOOKAHEAD = .6;
+  /* ── Lazy reggae-pop scheduler ───────────────────── */
+  const STEP = .375;       /* 8th notes, ~80 BPM, swung */
+  const BAR = 8;           /* steps per bar            */
+  const LOOKAHEAD = .7;
 
   function pad(chordKeys, dur) {
     if (!ctx) return;
     for (let i = 0; i < chordKeys.length; i++) {
       const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = chordKeys[i];
-      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 480;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, nextNoteTime);
-      g.gain.exponentialRampToValueAtTime(.035, nextNoteTime + 2.2);
+      g.gain.exponentialRampToValueAtTime(.02, nextNoteTime + 1.8);
       g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + dur);
       o.connect(lp); lp.connect(g); g.connect(musicBus);
       o.start(nextNoteTime); o.stop(nextNoteTime + dur + .2);
     }
   }
 
-  function bass(freq) {
-    if (!ctx) return;
-    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq / 2;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, nextNoteTime);
-    g.gain.exponentialRampToValueAtTime(.05, nextNoteTime + .04);
-    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + 1.6);
-    o.connect(g); g.connect(musicBus);
-    o.start(nextNoteTime); o.stop(nextNoteTime + 1.8);
-  }
-
-  function pluck(freq) {
-    if (!ctx) return;
-    const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, nextNoteTime);
-    g.gain.exponentialRampToValueAtTime(.05, nextNoteTime + .012);
-    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .7);
-    o.connect(g); g.connect(musicBus);
-    o.start(nextNoteTime); o.stop(nextNoteTime + .8);
-  }
-
-  function shimmer(freq) {
+  function bassRoot(freq) {
     if (!ctx) return;
     const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+    o.frequency.exponentialRampToValueAtTime(freq * 1.5, nextNoteTime + .14);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, nextNoteTime);
-    g.gain.exponentialRampToValueAtTime(.014, nextNoteTime + .05);
-    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + 1.4);
+    g.gain.exponentialRampToValueAtTime(.085, nextNoteTime + .03);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + 1.5);
     o.connect(g); g.connect(musicBus);
-    o.start(nextNoteTime); o.stop(nextNoteTime + 1.5);
+    o.start(nextNoteTime); o.stop(nextNoteTime + 1.6);
+  }
+
+  function skank(chordKeys) {
+    if (!ctx) return;
+    for (let i = 1; i < 4; i++) {
+      const o = ctx.createOscillator(); o.type = 'triangle';
+      o.frequency.value = chordKeys[i] * (Math.random() < .2 ? 2 : 1);
+      o.detune.value = (Math.random() - .5) * 8;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 950; f.Q.value = .8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, nextNoteTime);
+      g.gain.exponentialRampToValueAtTime(.014, nextNoteTime + .008);
+      g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .16);
+      o.connect(f); f.connect(g); g.connect(musicBus);
+      o.start(nextNoteTime); o.stop(nextNoteTime + .2);
+    }
+  }
+
+  function clap() {
+    if (!ctx) return;
+    const src = noiseSrc();
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1600; f.Q.value = 1.4;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, nextNoteTime);
+    g.gain.exponentialRampToValueAtTime(.045, nextNoteTime + .006);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .16);
+    src.connect(f); f.connect(g); g.connect(musicBus);
+    src.start(nextNoteTime); src.stop(nextNoteTime + .2);
+  }
+
+  function shaker() {
+    if (!ctx) return;
+    const src = noiseSrc();
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 5500;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, nextNoteTime);
+    g.gain.exponentialRampToValueAtTime(.012, nextNoteTime + .004);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .04);
+    src.connect(f); f.connect(g); g.connect(musicBus);
+    src.start(nextNoteTime); src.stop(nextNoteTime + .06);
+  }
+
+  function whistle(freq) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+    const vib = ctx.createOscillator(); vib.type = 'sine'; vib.frequency.value = 5.2;
+    const vg = ctx.createGain(); vg.gain.value = 6;
+    vib.connect(vg); vg.connect(o.frequency);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, nextNoteTime);
+    g.gain.exponentialRampToValueAtTime(.045, nextNoteTime + .09);
+    g.gain.setValueAtTime(.045, nextNoteTime + .28);
+    g.gain.exponentialRampToValueAtTime(0.0001, nextNoteTime + .85);
+    o.connect(g); g.connect(musicBus);
+    o.start(nextNoteTime); o.stop(nextNoteTime + 1);
+    vib.start(nextNoteTime); vib.stop(nextNoteTime + 1);
   }
 
   function scheduleStep() {
     if (!musicOn || !ctx) return;
     while (nextNoteTime < ctx.currentTime + LOOKAHEAD) {
-      const pos = step % (BAR * 8);      /* 8-bar loop */
       const bar = Math.floor(step / BAR) % 4;
+      const s = step % BAR;
 
-      if (step % BAR === 0) pad(CHORDS[bar], BAR * 3 * STEP);   /* chord per bar, 3-bar tail */
-      if (step % BAR === 0) bass(CHORDS[bar][0]);
-
-      if (pos % 2 === 0 && pos > 2) {
-        if (Math.random() < .55) pluck(PENTA[Math.floor(Math.random() * 5)] * (Math.random() < .3 ? 2 : 1));
+      if (s === 0) {
+        pad(CHORDS[bar], BAR * 2.6 * STEP);
+        bassRoot(CHORDS[bar][0] / 2);
+        if (Math.random() < .7) {
+          let idx = lastLead + (Math.random() < .5 ? -1 : 1) + (Math.random() < .3 ? (Math.random() < .5 ? -1 : 1) : 0);
+          idx = Math.max(0, Math.min(LEAD.length - 1, idx));
+          if (Math.random() < .2) idx = Math.floor(Math.random() * LEAD.length);
+          lastLead = idx;
+          whistle(LEAD[idx] * (Math.random() < .25 ? 2 : 1));
+        }
       }
-      if (pos === BAR * 3 + 4 || pos === BAR * 7 + 4) shimmer([440, 880][Math.floor(Math.random() * 2)]);
+      if (s === 3) bassRoot(CHORDS[bar][0] * 1.5);
+      if (s === 4) bassRoot(CHORDS[bar][0] / 2);
+      if (s === 6) bassRoot(CHORDS[bar][0] * 1.5);
+      if (s % 2 === 1) skank(CHORDS[bar]);
+      if (s === 2 || s === 6) clap();
+      if (s % 2 === 1 && s > 1) shaker();
 
-      nextNoteTime += STEP;
+      nextNoteTime += (s % 2 === 1) ? STEP * 1.12 : STEP;
       step++;
     }
   }
