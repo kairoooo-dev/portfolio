@@ -270,25 +270,34 @@
   tick();
 })();
 
-/* ── Skills solar system ──────────────────────────── */
-(function initSolarSystem() {
-  const canvas = document.getElementById('solarCanvas');
+/* ── Skills atom ──────────────────────────────────── */
+(function initAtom() {
+  const canvas = document.getElementById('atomCanvas');
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const wrap = canvas.parentElement;
 
-  const SKILLS = [
-    { name: 'Python',     short: 'Py',      ring: 1, color: '#4b8bbe' },
-    { name: 'Node.js',    short: 'Node',    ring: 1, color: '#68a063' },
-    { name: 'Java',       short: 'Java',    ring: 2, color: '#f89820' },
-    { name: 'JavaScript', short: 'JS',      ring: 2, color: '#f7df1e' },
-    { name: 'C++',        short: 'C++',     ring: 3, color: '#5c8dc7' },
-    { name: 'HTML',       short: 'HTML',    ring: 3, color: '#e44d26' },
-    { name: 'C#',         short: 'C#',      ring: 4, color: '#a45cc9' }
+  const ORBITALS = [
+    { tilt: 0,         speed: .8 },
+    { tilt: Math.PI / 3, speed: .6 },
+    { tilt: 2 * Math.PI / 3, speed: .45 }
   ];
-  const RING_SPEED = [0, .5, .38, .29, .22];
-  const RING_R = [0, .32, .46, .60, .74];
+  const ELECTRONS = [
+    { name: 'Python',     img: 'images/skills/python.svg',     color: '#4b8bbe', orb: 0, phase: 0 },
+    { name: 'Node.js',    img: 'images/skills/nodejs.svg',     color: '#68a063', orb: 0, phase: Math.PI },
+    { name: 'Java',       img: 'images/skills/java.svg',       color: '#f89820', orb: 1, phase: 0 },
+    { name: 'JavaScript', img: 'images/skills/javascript.svg', color: '#f7df1e', orb: 1, phase: 2 * Math.PI / 3 },
+    { name: 'C++',        img: 'images/skills/cplusplus.svg',  color: '#5c8dc7', orb: 1, phase: 4 * Math.PI / 3 },
+    { name: 'HTML',       img: 'images/skills/html5.svg',      color: '#e44d26', orb: 2, phase: 0 },
+    { name: 'C#',         img: 'images/skills/csharp.svg',     color: '#a45cc9', orb: 2, phase: Math.PI }
+  ];
+
+  ELECTRONS.forEach(s => {
+    s.imgEl = new Image();
+    s.imgEl.onload = () => { s.ready = true; };
+    s.imgEl.src = s.img;
+  });
 
   let W = 0, H = 0, cx = 0, cy = 0, unit = 0;
   let rot = 0, dragging = false, lastX = 0, hover = -1;
@@ -307,60 +316,83 @@
   resize();
   window.addEventListener('resize', resize);
 
-  function planetPos(s, t) {
-    const ang = s.ring * 137.5 * Math.PI / 180 + rot + RING_SPEED[s.ring] * t;
+  function electronPos(s, t) {
+    const o = ORBITALS[s.orb];
+    const a = .62 * unit, b = .26 * unit;
+    const th = s.phase + o.speed * t + rot;
+    const ex = a * Math.cos(th);
+    const ey = b * Math.sin(th);
+    const tilt = o.tilt + rot;
     return {
-      x: cx + Math.cos(ang) * RING_R[s.ring] * unit,
-      y: cy + Math.sin(ang) * RING_R[s.ring] * unit
+      x: cx + ex * Math.cos(tilt) - ey * Math.sin(tilt),
+      y: cy + ex * Math.sin(tilt) + ey * Math.cos(tilt)
     };
   }
 
   function draw(t) {
     ctx.clearRect(0, 0, W, H);
 
-    ctx.lineWidth = 1;
-    for (let r = 1; r <= 4; r++) {
+    for (let i = 0; i < ORBITALS.length; i++) {
       ctx.beginPath();
-      ctx.arc(cx, cy, RING_R[r] * unit, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,.09)';
+      ctx.ellipse(cx, cy, .62 * unit, .26 * unit, ORBITALS[i].tilt + rot, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,.08)';
       ctx.stroke();
     }
 
-    const pulse = 1 + Math.sin(t * 1.4) * .03;
-    const sr = 20 * unit / 90 * pulse;
-    ctx.beginPath(); ctx.arc(cx, cy, sr, 0, Math.PI * 2);
+    const pulse = 1 + Math.sin(t * 1.4) * .04;
+    const nr = .11 * unit * pulse;
+    ctx.beginPath(); ctx.arc(cx, cy, nr, 0, Math.PI * 2);
     ctx.fillStyle = '#dc2626';
     ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, cy, sr * .45, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(cx, cy, nr * .55, 0, Math.PI * 2);
     ctx.fillStyle = '#0a0a10';
     ctx.fill();
-    ctx.font = '600 ' + Math.round(Math.max(10, unit * .1)) + "px 'JetBrains Mono', monospace";
+    for (let i = 0; i < 3; i++) {
+      const ang = i * 2 * Math.PI / 3 + t * .5;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(ang) * nr * 1.5, cy + Math.sin(ang) * nr * 1.5, nr * .24, 0, Math.PI * 2);
+      ctx.fillStyle = '#1c1c26';
+      ctx.fill();
+    }
+    ctx.font = '600 ' + Math.round(Math.max(10, unit * .095)) + "px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fca5a5';
-    ctx.fillText('Crowz', cx, cy + sr + Math.max(10, unit * .085));
+    ctx.fillText('Crowz', cx, cy + nr + Math.max(12, unit * .1));
 
-    for (let i = 0; i < SKILLS.length; i++) {
-      const s = SKILLS[i];
-      const p = planetPos(s, t);
-      const pr = 12 * unit / 90;
+    for (let i = 0; i < ELECTRONS.length; i++) {
+      const s = ELECTRONS[i];
+      const p = electronPos(s, t);
+      const er = Math.max(9, .17 * unit) * (i === hover ? 1.25 : 1);
       const hot = i === hover;
+      ctx.save();
       ctx.beginPath();
-      ctx.arc(p.x, p.y, pr * (hot ? 1.25 : 1), 0, Math.PI * 2);
-      ctx.fillStyle = s.color;
-      ctx.fill();
+      ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = '#0f0f16';
+      ctx.fillRect(p.x - er, p.y - er, er * 2, er * 2);
+      if (s.ready) {
+        const s2 = er * 1.9;
+        ctx.drawImage(s.imgEl, p.x - s2 / 2, p.y - s2 / 2, s2, s2);
+      } else {
+        ctx.fillStyle = s.color;
+        ctx.fillRect(p.x - er * .5, p.y - er * .5, er, er);
+      }
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = 'rgba(0,0,0,.55)';
+      ctx.strokeStyle = hot ? '#fff' : s.color;
       ctx.stroke();
-      ctx.font = Math.round(Math.max(10, unit * .1)) + "px 'JetBrains Mono', monospace";
+      ctx.font = Math.round(Math.max(10, unit * .095)) + "px 'JetBrains Mono', monospace";
       ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
-      ctx.fillText(unit < 190 ? s.short : s.name, p.x, p.y + pr + Math.max(10, unit * .085));
+      ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .09));
     }
   }
 
   function loop(now) {
     requestAnimationFrame(loop);
-    const t = reduced ? 0 : (now - t0) / 1000;
-    draw(t);
+    draw(reduced ? 0 : (now - t0) / 1000);
   }
   requestAnimationFrame(loop);
 
@@ -381,9 +413,9 @@
     const my = e.clientY - rect.top;
     hover = -1;
     const t = (performance.now() - t0) / 1000;
-    for (let i = 0; i < SKILLS.length; i++) {
-      const p = planetPos(SKILLS[i], t);
-      if (Math.hypot(p.x - mx, p.y - my) < 24) {
+    for (let i = 0; i < ELECTRONS.length; i++) {
+      const p = electronPos(ELECTRONS[i], t);
+      if (Math.hypot(p.x - mx, p.y - my) < Math.max(20, .2 * unit)) {
         hover = i;
         break;
       }
