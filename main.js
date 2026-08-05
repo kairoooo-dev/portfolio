@@ -238,7 +238,7 @@
     'Owner of Enclave SMP',
     'Security & Performance',
     '18+ Free Verified Plugins',
-    'i get sh*t DONE'
+    'i do sh*t RIGHT'
   ];
   let pi = 0, ci = 0, deleting = false;
   function loop() {
