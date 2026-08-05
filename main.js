@@ -279,9 +279,9 @@
   const wrap = canvas.parentElement;
 
   const ORBITALS = [
-    { tilt: 0,         speed: .8 },
-    { tilt: Math.PI / 3, speed: .6 },
-    { tilt: 2 * Math.PI / 3, speed: .45 }
+    { tilt: 0,          speed: 1.0 },
+    { tilt: Math.PI / 3,  speed: .75 },
+    { tilt: 2 * Math.PI / 3, speed: .55 }
   ];
   const ELECTRONS = [
     { name: 'Python',     img: 'images/skills/python.svg',     color: '#4b8bbe', orb: 0, phase: 0 },
@@ -300,7 +300,7 @@
   });
 
   let W = 0, H = 0, cx = 0, cy = 0, unit = 0;
-  let rot = 0, dragging = false, lastX = 0, hover = -1;
+  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1;
   const t0 = performance.now();
 
   function resize() {
@@ -316,13 +316,15 @@
   resize();
   window.addEventListener('resize', resize);
 
+  function wob(t, i) { return Math.sin(t * .4 + i * 2.1) * .05; }
+
   function electronPos(s, t) {
     const o = ORBITALS[s.orb];
     const a = .62 * unit, b = .26 * unit;
     const th = s.phase + o.speed * t + rot;
     const ex = a * Math.cos(th);
     const ey = b * Math.sin(th);
-    const tilt = o.tilt + rot;
+    const tilt = o.tilt + rot + wob(t, s.orb);
     return {
       x: cx + ex * Math.cos(tilt) - ey * Math.sin(tilt),
       y: cy + ex * Math.sin(tilt) + ey * Math.cos(tilt)
@@ -334,9 +336,14 @@
 
     for (let i = 0; i < ORBITALS.length; i++) {
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .62 * unit, .26 * unit, ORBITALS[i].tilt + rot, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .62 * unit, .26 * unit, ORBITALS[i].tilt + rot + wob(t, i), 0, Math.PI * 2);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(255,255,255,.08)';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, .62 * unit, .26 * unit, ORBITALS[i].tilt + rot + wob(t, i) + .04, 0, Math.PI * 2);
+      ctx.lineWidth = .5;
+      ctx.strokeStyle = 'rgba(255,255,255,.04)';
       ctx.stroke();
     }
 
@@ -349,21 +356,22 @@
     ctx.fillStyle = '#0a0a10';
     ctx.fill();
     for (let i = 0; i < 3; i++) {
-      const ang = i * 2 * Math.PI / 3 + t * .5;
+      const ang = i * 2 * Math.PI / 3 + t * .8;
       ctx.beginPath();
       ctx.arc(cx + Math.cos(ang) * nr * 1.5, cy + Math.sin(ang) * nr * 1.5, nr * .24, 0, Math.PI * 2);
       ctx.fillStyle = '#1c1c26';
       ctx.fill();
     }
-    ctx.font = '600 ' + Math.round(Math.max(10, unit * .095)) + "px 'JetBrains Mono', monospace";
+    ctx.font = '600 ' + Math.round(Math.max(10, unit * .085)) + "px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fca5a5';
-    ctx.fillText('Crowz', cx, cy + nr + Math.max(12, unit * .1));
+    ctx.fillText('Crowz', cx, cy + nr + Math.max(12, unit * .09));
 
     for (let i = 0; i < ELECTRONS.length; i++) {
       const s = ELECTRONS[i];
       const p = electronPos(s, t);
-      const er = Math.max(9, .17 * unit) * (i === hover ? 1.25 : 1);
+      const breath = 1 + Math.sin(t * 2 + s.phase * 3) * .06;
+      const er = Math.max(8, .12 * unit) * breath * (i === hover ? 1.3 : 1);
       const hot = i === hover;
       ctx.save();
       ctx.beginPath();
@@ -372,7 +380,7 @@
       ctx.fillStyle = '#0f0f16';
       ctx.fillRect(p.x - er, p.y - er, er * 2, er * 2);
       if (s.ready) {
-        const s2 = er * 1.9;
+        const s2 = er * 1.8;
         ctx.drawImage(s.imgEl, p.x - s2 / 2, p.y - s2 / 2, s2, s2);
       } else {
         ctx.fillStyle = s.color;
@@ -384,27 +392,40 @@
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = hot ? '#fff' : s.color;
       ctx.stroke();
-      ctx.font = Math.round(Math.max(10, unit * .095)) + "px 'JetBrains Mono', monospace";
+      ctx.beginPath();
+      ctx.arc(p.x - er * .35, p.y - er * .35, er * .22, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.fill();
+      ctx.font = Math.round(Math.max(9, unit * .085)) + "px 'JetBrains Mono', monospace";
       ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
-      ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .09));
+      ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .08));
     }
   }
 
   function loop(now) {
     requestAnimationFrame(loop);
-    draw(reduced ? 0 : (now - t0) / 1000);
+    const t = reduced ? 0 : (now - t0) / 1000;
+    if (!dragging) {
+      rot += vel;
+      vel *= .96;
+      if (Math.abs(vel) < .0004) vel = 0;
+    }
+    draw(t);
   }
   requestAnimationFrame(loop);
 
   canvas.addEventListener('pointerdown', e => {
     dragging = true;
+    vel = 0;
     lastX = e.clientX;
     canvas.classList.add('grabbing');
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', e => {
     if (dragging) {
-      rot += (e.clientX - lastX) * .006;
+      const dx = e.clientX - lastX;
+      rot += dx * .006;
+      vel = dx * .006;
       lastX = e.clientX;
       return;
     }
