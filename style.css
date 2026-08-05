@@ -67,8 +67,13 @@ button { font-family: inherit; cursor: pointer; }
 }
 .loader-inner {
   position: relative; z-index: 1;
-  text-align: center; width: min(340px, 84vw);
+  text-align: center; width: min(360px, 86vw);
 }
+.loader-version {
+  font-family: var(--mono); font-size: .7rem; color: var(--text2);
+  letter-spacing: .14em; text-transform: uppercase; margin-bottom: 24px;
+}
+.loader-vtag { color: var(--accent); font-size: .6rem; margin-right: 6px; }
 .loader-brand {
   font-family: var(--serif); font-weight: 900; letter-spacing: -.01em;
   font-size: 3.2rem; color: var(--text); line-height: 1;
@@ -88,6 +93,19 @@ button { font-family: inherit; cursor: pointer; }
   animation-delay: .7s;
 }
 @keyframes fadeInUp { to { opacity: 1; transform: none; } }
+.loader-boot {
+  text-align: left; font-family: var(--mono); font-size: .78rem; line-height: 2;
+  color: var(--text2);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 14px 18px; margin: 30px auto 20px;
+  overflow: hidden; white-space: nowrap;
+}
+.boot-row { display: flex; align-items: baseline; gap: 8px; opacity: 0; transform: translateY(6px); transition: opacity .3s ease, transform .3s ease; }
+.boot-row.in { opacity: 1; transform: none; }
+.boot-pad { flex: 1; border-bottom: 1px dotted rgba(255, 255, 255, .16); margin: 0 2px; transform: translateY(-3px); }
+.boot-ok { color: var(--accent3); }
+.boot-ok.ready-line { color: var(--accent); }
 .loader-track {
   height: 3px; background: rgba(255, 255, 255, .08); border-radius: 2px;
   margin: 30px auto 10px; overflow: hidden;
@@ -111,6 +129,7 @@ button { font-family: inherit; cursor: pointer; }
   opacity: 0; transform: translateY(14px); pointer-events: none;
   transition: opacity .35s ease, transform .35s ease;
 }
+.enter-arrow { font-size: .72rem; margin-right: 6px; }
 .loader-enter.ready { opacity: 1; transform: none; pointer-events: auto; }
 .loader-enter.ready:hover { transform: translateY(-2px); filter: brightness(1.08); }
 .loader-hint { margin-top: 14px; font-size: .72rem; color: var(--text2); }

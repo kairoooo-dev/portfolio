@@ -10,20 +10,22 @@
   const bar = document.getElementById('loaderBar');
   const pctEl = document.getElementById('loaderPct');
   const statusEl = document.getElementById('loaderStatus');
-  let loaded = false, entered = false, starsRaf = 0;
+  const bootEl = document.getElementById('loaderBoot');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let loaded = false, entered = false, bootDone = false, starsRaf = 0;
 
-  const MIN_MS = 1500;
-
-  const LINES = [
-    [0,   'booting crowz'],
-    [10,  'compiling plugins'],
-    [28,  'loading world chunks'],
-    [50,  'calibrating drop rates'],
-    [72,  'warming the spawn'],
-    [94,  'almost there']
+  const BOOT = [
+    { pre: 'mounting /plugins',        ok: 'ok',        ready: false },
+    { pre: 'loading CrowzAntiVPN',     ok: 'ok',        ready: false },
+    { pre: 'loading CrowzOptimizer',   ok: 'ok',        ready: false },
+    { pre: 'loading PVPCoreX',         ok: 'ok',        ready: false },
+    { pre: 'loading EnclaveSMP',       ok: 'ok',        ready: false },
+    { pre: 'handshake with spawn',     ok: 'ok',        ready: false },
+    { pre: 'ready',                    ok: 'ready.',    ready: true  }
   ];
+  const DOTS = 9;
 
-  /* twinkling stars inside the loader */
+  /* ── twinkling stars inside the loader ── */
   const starsC = document.getElementById('loaderStars');
   if (starsC && starsC.getContext) {
     const sctx = starsC.getContext('2d');
@@ -36,7 +38,7 @@
       sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     sresize();
-    const sn = Math.min(70, Math.floor(sw * sh / 18000));
+    const sn = Math.min(80, Math.floor(sw * sh / 16000));
     const sstars = Array.from({ length: sn }, () => ({
       x: Math.random() * sw, y: Math.random() * sh,
       r: Math.random() * 1.4 + .4,
@@ -61,39 +63,96 @@
     sTick();
   }
 
+  /* ── boot log sequence ── */
+  const TYPE_MS = reduced ? 1 : 13;
+  const DOT_MS = reduced ? 1 : 24;
+  let completed = 0;
+  const total = BOOT.length;
+
   function setProgress(p) {
     if (bar) bar.style.transform = `scaleX(${p})`;
     if (pctEl) pctEl.textContent = Math.round(p * 100) + '%';
-    for (let i = LINES.length - 1; i >= 0; i--) {
-      if (p * 100 >= LINES[i][0]) { setStatus(LINES[i][1]); break; }
-    }
   }
-  function setStatus(text) { if (statusEl && statusEl.textContent !== text) statusEl.textContent = text; }
+
+  function makeRow(line) {
+    const row = document.createElement('div');
+    row.className = 'boot-row';
+    const pre = document.createElement('span');
+    pre.className = 'boot-pre';
+    const pad = document.createElement('span');
+    pad.className = 'boot-pad';
+    const ok = document.createElement('span');
+    ok.className = 'boot-ok' + (line.ready ? ' ready-line' : '');
+    row.append(pre, pad, ok);
+    return { row, pre, pad, ok };
+  }
+
+  function typeLine(line, next) {
+    const { row, pre, pad, ok } = makeRow(line);
+    bootEl.appendChild(row);
+    requestAnimationFrame(() => row.classList.add('in'));
+    if (statusEl) statusEl.textContent = line.pre + '\u2026';
+
+    let ci = 0;
+    const typeIv = setInterval(() => {
+      ci++;
+      pre.textContent = '> ' + line.pre.slice(0, ci);
+      if (ci >= line.pre.length) {
+        clearInterval(typeIv);
+        let di = 0;
+        const dotIv = setInterval(() => {
+          di++;
+          pad.textContent = '.'.repeat(Math.min(di, DOTS));
+          setProgress((completed + di / DOTS) / total);
+          if (di >= DOTS) {
+            clearInterval(dotIv);
+            ok.textContent = line.ok;
+            completed++;
+            setProgress(completed / total);
+            setTimeout(next, reduced ? 40 : 240);
+          }
+        }, DOT_MS);
+      }
+    }, TYPE_MS);
+    return { stop() { clearInterval(typeIv); } };
+  }
+
+  function runBoot() {
+    if (!bootEl) { bootDone = true; return; }
+    let i = 0;
+    function next() {
+      if (!loader.isConnected || i >= total) { finishBoot(); return; }
+      typeLine(BOOT[i], next);
+      i++;
+    }
+    function finishBoot() {
+      bootDone = true;
+      if (statusEl) statusEl.textContent = 'ready. waiting on you';
+      const lastRow = bootEl.lastElementChild;
+      if (lastRow) {
+        const ok = lastRow.querySelector('.boot-ok');
+        if (ok && ok.textContent !== 'ready.') ok.textContent = 'ready.';
+      }
+      enable();
+    }
+    next();
+  }
 
   function enable() {
     if (loaded) return;
     loaded = true;
     setProgress(1);
-    setStatus('done, waiting on you');
     if (enter) { enter.classList.add('ready'); enter.focus(); }
   }
 
-  const minWait = new Promise(r => setTimeout(r, MIN_MS));
+  const minWait = new Promise(r => setTimeout(r, 2600));
   const pageLoad = new Promise(r => {
     if (document.readyState === 'complete') r();
     else window.addEventListener('load', r, { once: true });
   });
-  Promise.all([minWait, pageLoad]).then(enable);
-
-  /* eased progress toward 94% (jumps to 100 when enabled) */
-  const start = performance.now();
-  const DUR = MIN_MS * .92;
-  (function prog(now) {
-    const t = Math.min((now - start) / DUR, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-    if (!loaded) setProgress(.94 * eased);
-    if (!loaded) requestAnimationFrame(prog);
-  })(start);
+  runBoot();
+  Promise.all([minWait, pageLoad, new Promise(r => { const iv = setInterval(() => { if (bootDone) { clearInterval(iv); r(); } }, 100); })])
+    .then(enable);
 
   function enterSite() {
     if (!loaded || entered) return;
