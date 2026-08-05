@@ -299,9 +299,19 @@
     s.imgEl.src = s.img;
   });
 
-  let W = 0, H = 0, cx = 0, cy = 0, unit = 0;
-  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1;
+  let W = 0, H = 0, cx = 0, cy = 0, baseU = 0, unit = 0, zoom = 1;
+  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1, lastT = 0;
+  const pointers = new Map();
+  let pinchDist = 0;
+  const MINZ = .6, MAXZ = 1.6;
   const t0 = performance.now();
+  const trails = ELECTRONS.map(() => []);
+
+  function applyZoom() { unit = baseU * zoom; }
+  function zoomBy(f) {
+    zoom = Math.min(MAXZ, Math.max(MINZ, zoom * f));
+    applyZoom();
+  }
 
   function resize() {
     const rect = wrap.getBoundingClientRect();
@@ -311,7 +321,8 @@
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cx = W / 2; cy = H / 2;
-    unit = Math.min(W, H) / 2;
+    baseU = Math.min(W, H) / 2;
+    applyZoom();
   }
   resize();
   window.addEventListener('resize', resize);
@@ -373,6 +384,22 @@
       const breath = 1 + Math.sin(t * 2 + s.phase * 3) * .06;
       const er = Math.max(8, .12 * unit) * breath * (i === hover ? 1.3 : 1);
       const hot = i === hover;
+
+      if (!reduced) {
+        trails[i].push({ x: p.x, y: p.y });
+        if (trails[i].length > 12) trails[i].shift();
+        const tr = trails[i];
+        for (let k = 0; k < tr.length; k++) {
+          const f = (k + 1) / tr.length;
+          ctx.beginPath();
+          ctx.arc(tr[k].x, tr[k].y, .5 + 2.5 * f, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = .28 * f;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+
       ctx.save();
       ctx.beginPath();
       ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
@@ -396,6 +423,13 @@
       ctx.arc(p.x - er * .35, p.y - er * .35, er * .22, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(255,255,255,.7)';
       ctx.fill();
+      if (hot) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, er + 5 + Math.sin(t * 6) * 2.5, 0, Math.PI * 2);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255,255,255,.45)';
+        ctx.stroke();
+      }
       ctx.font = Math.round(Math.max(9, unit * .085)) + "px 'JetBrains Mono', monospace";
       ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
       ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .08));
@@ -405,6 +439,7 @@
   function loop(now) {
     requestAnimationFrame(loop);
     const t = reduced ? 0 : (now - t0) / 1000;
+    lastT = t;
     if (!dragging) {
       rot += vel;
       vel *= .96;
@@ -415,6 +450,16 @@
   requestAnimationFrame(loop);
 
   canvas.addEventListener('pointerdown', e => {
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) {
+      dragging = false;
+      canvas.classList.remove('grabbing');
+      pinchDist = Math.hypot(
+        [...pointers.values()][0].x - [...pointers.values()][1].x,
+        [...pointers.values()][0].y - [...pointers.values()][1].y
+      );
+      return;
+    }
     dragging = true;
     vel = 0;
     lastX = e.clientX;
@@ -422,6 +467,16 @@
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener('pointermove', e => {
+    if (pointers.has(e.pointerId)) {
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchDist > 0 && d > 0) zoomBy(d / pinchDist);
+      pinchDist = d;
+      return;
+    }
     if (dragging) {
       const dx = e.clientX - lastX;
       rot += dx * .006;
@@ -432,23 +487,38 @@
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    hover = -1;
-    const t = (performance.now() - t0) / 1000;
+    const R = Math.max(8, .12 * unit) + 10;
+    let best = -1, bestD = Infinity;
     for (let i = 0; i < ELECTRONS.length; i++) {
-      const p = electronPos(ELECTRONS[i], t);
-      if (Math.hypot(p.x - mx, p.y - my) < Math.max(20, .2 * unit)) {
-        hover = i;
-        break;
-      }
+      const p = electronPos(ELECTRONS[i], lastT);
+      const d = Math.hypot(p.x - mx, p.y - my);
+      if (d < bestD) { bestD = d; best = i; }
     }
+    hover = bestD <= R ? best : -1;
     canvas.style.cursor = hover >= 0 ? 'pointer' : 'grab';
   });
-  canvas.addEventListener('pointerup', () => {
-    dragging = false;
-    canvas.classList.remove('grabbing');
-  });
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    pinchDist = 0;
+    if (pointers.size === 0) {
+      dragging = false;
+      canvas.classList.remove('grabbing');
+    }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('pointerleave', () => {
     if (!dragging) hover = -1;
+  });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomBy(Math.exp(-e.deltaY * .0012));
+  }, { passive: false });
+  canvas.addEventListener('dblclick', () => {
+    zoom = 1;
+    rot = 0;
+    vel = 0;
+    applyZoom();
   });
 })();
 
