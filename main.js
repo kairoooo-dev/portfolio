@@ -310,10 +310,29 @@
 
   let W = 0, H = 0, cx = 0, cy = 0, unit = 0;
   let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1, lastSrot = 0;
+  let clickFlash = -1, clickT = -1e9, lastHoverSfx = 0, tLast = 0;
+  let downX = 0, downY = 0, downT = 0;
   const pointers = new Set();
+  const keys = { l: false, r: false };
+  let visible = true;
   const SPIN = .12;
   const t0 = performance.now();
   const trails = DOTS.map(() => []);
+
+  const dust = [];
+  if (!reduced) {
+    for (let i = 0; i < 16; i++) {
+      dust.push({
+        ang: Math.random() * Math.PI * 2,
+        r: .3 + Math.random() * .28,
+        speed: (.3 + Math.random() * .7) * (Math.random() < .5 ? -1 : 1),
+        size: 1 + Math.random() * 1.8,
+        tint: Math.random() < .3
+      });
+    }
+  }
+  const rings = [];
+  let ringTimer = 0;
 
   function resize() {
     const rect = wrap.getBoundingClientRect();
@@ -327,6 +346,20 @@
   }
   resize();
   window.addEventListener('resize', resize);
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(es => { visible = es[0].isIntersecting; }, { threshold: .2 }).observe(canvas);
+  }
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.l = true;
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.r = true;
+    else return;
+    if (visible && !dragging) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.l = false;
+    else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.r = false;
+  });
 
   function wob(t, i) { return Math.sin(t * .4 + i * 2.1) * .05; }
 
@@ -343,11 +376,42 @@
     const tilt = o.tilt + srot + wob(t, ORBITALS.indexOf(o));
     return {
       x: cx + ex * Math.cos(tilt) - ey * Math.sin(tilt),
-      y: cy + ex * Math.sin(tilt) + ey * Math.cos(tilt)
+      y: cy + ex * Math.sin(tilt) + ey * Math.cos(tilt),
+      th
     };
   }
 
+  function drawDot(i, d, t, srot, front) {
+    const p = dotPos(d, d.phase, t, srot);
+    if (!reduced) {
+      trails[i].push({ x: p.x, y: p.y });
+      if (trails[i].length > 12) trails[i].shift();
+      const tr = trails[i];
+      for (let k = 0; k < tr.length; k++) {
+        const f = (k + 1) / tr.length;
+        ctx.beginPath();
+        ctx.arc(tr[k].x, tr[k].y, .5 + 2 * f, 0, Math.PI * 2);
+        ctx.fillStyle = '#fca5a5';
+        ctx.globalAlpha = .3 * f * (front ? 1 : .4);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+    const dr = Math.max(3, .032 * unit) * (front ? 1 : .72);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, dr, 0, Math.PI * 2);
+    ctx.fillStyle = front ? '#fca5a5' : 'rgba(252,165,165,.55)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, dr * .4, 0, Math.PI * 2);
+    ctx.fillStyle = '#0a0a10';
+    ctx.fill();
+  }
+
   function drawLogo(s, p, er, hot, t) {
+    const tt = t - clickT;
+    const flash = clickFlash >= 0 && s.name === (clickFlash === HOVER_CENTER ? CENTER.name : TIPS[clickFlash].name);
+    const flashFade = flash ? Math.max(0, 1 - tt / .9) : 0;
     ctx.save();
     ctx.beginPath();
     ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
@@ -378,53 +442,98 @@
       ctx.strokeStyle = 'rgba(255,255,255,.45)';
       ctx.stroke();
     }
+    if (flashFade > 0) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, er + 6 + flashFade * er * 1.8, 0, Math.PI * 2);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = s.color;
+      ctx.globalAlpha = flashFade * .8;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, er + 4 + flashFade * er * 3, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,.6)';
+      ctx.globalAlpha = flashFade * .7;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     ctx.font = Math.round(Math.max(8, unit * .075)) + "px 'JetBrains Mono', monospace";
-    ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
+    ctx.fillStyle = hot || flashFade > 0 ? '#fff' : '#eaeaf2';
     ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(8, unit * .075));
   }
 
-  function draw(t, srot) {
+  function draw(t, srot, dt) {
     ctx.clearRect(0, 0, W, H);
 
+    if (!reduced) {
+      ringTimer += dt;
+      if (ringTimer > 2.2) {
+        ringTimer = 0;
+        rings.push({ r: 0, a: .3 });
+      }
+      for (let i = rings.length - 1; i >= 0; i--) {
+        const rg = rings[i];
+        rg.r += unit * .5 * dt;
+        rg.a -= .012;
+        if (rg.a <= 0 || rg.r > unit * .62) { rings.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(cx, cy, rg.r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(220,38,38,' + rg.a + ')';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      for (const d of dust) {
+        const a = d.ang + d.speed * t;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * d.r * unit, cy + Math.sin(a) * d.r * unit, d.size, 0, Math.PI * 2);
+        ctx.fillStyle = d.tint ? '#fca5a5' : '#eaeaf2';
+        ctx.globalAlpha = .28;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
     for (let i = 0; i < ORBITALS.length; i++) {
+      const tilt = ORBITALS[i].tilt + srot + wob(t, i);
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + srot + wob(t, i), 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, tilt, 0, Math.PI * 2);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(255,255,255,.08)';
       ctx.stroke();
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + srot + wob(t, i) + .04, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, tilt + .04, 0, Math.PI * 2);
       ctx.lineWidth = .5;
       ctx.strokeStyle = 'rgba(255,255,255,.04)';
       ctx.stroke();
+      ctx.beginPath();
+      ctx.setLineDash([5, 9]);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, tilt, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(252,165,165,.12)';
+      ctx.lineDashOffset = -t * 26 - srot * 40;
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     for (let i = 0; i < DOTS.length; i++) {
-      const d = DOTS[i];
-      const p = dotPos(d, d.phase, t, srot);
-      if (!reduced) {
-        trails[i].push({ x: p.x, y: p.y });
-        if (trails[i].length > 12) trails[i].shift();
-        const tr = trails[i];
-        for (let k = 0; k < tr.length; k++) {
-          const f = (k + 1) / tr.length;
-          ctx.beginPath();
-          ctx.arc(tr[k].x, tr[k].y, .5 + 2 * f, 0, Math.PI * 2);
-          ctx.fillStyle = '#fca5a5';
-          ctx.globalAlpha = .3 * f;
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        }
+      if (Math.sin(DOTS[i].phase + ORBITALS[DOTS[i].orb].speed * t + srot) < 0) {
+        drawDot(i, DOTS[i], t, srot, false);
       }
-      const dr = Math.max(3, .032 * unit);
+    }
+
+    for (let i = 0; i < TIPS.length; i++) {
+      const s = TIPS[i];
+      const p = tipPos(s, srot);
+      const hot = i === hover;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, dr, 0, Math.PI * 2);
-      ctx.fillStyle = '#fca5a5';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, dr * .4, 0, Math.PI * 2);
-      ctx.fillStyle = '#0a0a10';
-      ctx.fill();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = s.color;
+      ctx.globalAlpha = hot ? .6 : .14;
+      ctx.lineWidth = hot ? 1.5 : 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
     }
 
     const hotCenter = hover === HOVER_CENTER;
@@ -434,6 +543,18 @@
     ctx.beginPath();
     ctx.arc(cx, cy, cer + 8 + Math.sin(t * 3) * 3, 0, Math.PI * 2);
     ctx.stroke();
+    if (!reduced) {
+      const npr = cer * 1.9;
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + t * .9 + srot;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * npr, cy + Math.sin(a) * npr, Math.max(1.2, .012 * unit), 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 ? '#dc2626' : '#fca5a5';
+        ctx.globalAlpha = .55;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
     drawLogo(CENTER, { x: cx, y: cy }, cer, hotCenter, t);
 
     for (let i = 0; i < TIPS.length; i++) {
@@ -443,24 +564,35 @@
       const er = .105 * unit * (hot ? 1.25 : 1) * (1 + Math.sin(t * 1.6 + i) * .04);
       drawLogo(s, p, er, hot, t);
     }
+
+    for (let i = 0; i < DOTS.length; i++) {
+      if (Math.sin(DOTS[i].phase + ORBITALS[DOTS[i].orb].speed * t + srot) >= 0) {
+        drawDot(i, DOTS[i], t, srot, true);
+      }
+    }
   }
 
   function loop(now) {
     requestAnimationFrame(loop);
+    const dt = reduced ? 0 : Math.min((now - t0) / 1000 - tLast, .05);
     const t = reduced ? 0 : (now - t0) / 1000;
+    tLast = t;
     const srot = rot + t * SPIN;
     lastSrot = srot;
     if (!dragging) {
+      if (visible && keys.l) rot -= .004;
+      if (visible && keys.r) rot += .004;
       rot += vel;
       vel *= .96;
       if (Math.abs(vel) < .0004) vel = 0;
     }
-    draw(t, srot);
+    draw(t, srot, dt);
   }
   requestAnimationFrame(loop);
 
   canvas.addEventListener('pointerdown', e => {
     pointers.add(e.pointerId);
+    downX = e.clientX; downY = e.clientY; downT = performance.now();
     if (pointers.size >= 2) return;
     dragging = true;
     vel = 0;
@@ -488,7 +620,14 @@
       const d = Math.hypot(spot.p.x - mx, spot.p.y - my);
       if (d < spot.r && d < bestD) { bestD = d; best = spot.i; }
     }
-    hover = best;
+    if (best !== hover) {
+      hover = best;
+      const now = performance.now();
+      if (best >= 0 && window.CrowzAudio && now - lastHoverSfx > 130) {
+        lastHoverSfx = now;
+        window.CrowzAudio.hover();
+      }
+    }
     canvas.style.cursor = best >= 0 ? 'pointer' : 'grab';
   });
   function endPointer(e) {
@@ -496,6 +635,28 @@
     if (pointers.size === 0) {
       dragging = false;
       canvas.classList.remove('grabbing');
+      const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
+      if (dist < 8 && performance.now() - downT < 500) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        let best = -1, bestD = Infinity;
+        const spots = [
+          ...TIPS.map((s, i) => ({ i, p: tipPos(s, lastSrot), r: Math.max(7, .105 * unit) + 10 })),
+          { i: HOVER_CENTER, p: { x: cx, y: cy }, r: Math.max(9, .155 * unit) + 10 }
+        ];
+        for (const spot of spots) {
+          const d = Math.hypot(spot.p.x - mx, spot.p.y - my);
+          if (d < spot.r && d < bestD) { bestD = d; best = spot.i; }
+        }
+        if (best >= 0) {
+          clickFlash = best;
+          clickT = (performance.now() - t0) / 1000;
+          if (window.CrowzAudio) window.CrowzAudio.click();
+        }
+      } else if (Math.abs(vel) > .006 && window.CrowzAudio) {
+        window.CrowzAudio.whoosh();
+      }
     }
   }
   canvas.addEventListener('pointerup', endPointer);
@@ -842,7 +1003,10 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   window.CrowzAudio = {
     start() { unlock(); startMusic(); },
     stop() { stopMusic(); },
-    toggle() { if (musicOn) stopMusic(); else { unlock(); startMusic(); } }
+    toggle() { if (musicOn) stopMusic(); else { unlock(); startMusic(); } },
+    hover() { sHover(); },
+    click() { sClick(); },
+    whoosh() { sWhoosh(); }
   };
 
   if (toggle) {
