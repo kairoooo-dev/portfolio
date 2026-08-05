@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   Crowz Portfolio — Loader, Stars & Chill Sound
+   Crowz Portfolio: Loader, Stars & Chill Sound
    ═══════════════════════════════════════════════════════ */
 
 /* ── Loading / enter screen ───────────────────────── */
@@ -686,7 +686,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 })();
 
 /* ═══════════════════════════════════════════════════════
-   Audio — chill procedural ambiance + soft SFX.
+   Audio: chill procedural ambiance + soft SFX.
    Synthesized with Web Audio: no files, works offline.
    ═══════════════════════════════════════════════════════ */
 (function initAudio() {
@@ -696,7 +696,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   let schedulerId = null, nextNoteTime = 0, step = 0;
   let playing = false;
 
-  /* Chill progression — Cmaj7 · Am7 · Fmaj7 · G — as [root, chord] voice freqs */
+  /* Chill progression: Cmaj7 · Am7 · Fmaj7 · G as [root, chord] voice freqs */
   const CHORDS = [
     [130.81, 164.81, 196.00, 246.94], /* Cmaj7 */
     [110.00, 164.81, 196.00, 246.94], /* Am7  */

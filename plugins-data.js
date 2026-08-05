@@ -33,7 +33,7 @@ const PLUGINS = [
   {
     id: "pvp", name: "CrowzPvP", jar: "crowzpvp-1.0.0.jar", version: "1.0.0",
     category: "Client Mod", type: "Client",
-    desc: "PvP client utilities — auto-eat, auto-sprint, auto-fish, and armor break warnings.",
+    desc: "PvP client utilities: auto-eat, auto-sprint, auto-fish, and armor break warnings.",
     features: ["Auto-eat", "Auto-sprint", "Armor break warning"]
   },
   {
@@ -51,7 +51,7 @@ const PLUGINS = [
   {
     id: "enclave-smp", name: "EnclaveSMP", jar: "EnclaveSMP-1.0.0.jar", version: "1.0.0",
     category: "SMP", type: "Plugin",
-    desc: "Core SMP utilities — set the server world spawn and respawn all players there.",
+    desc: "Core SMP utilities: set the server world spawn and respawn all players there.",
     features: ["Spawn management", "Respawn control"]
   },
   {
@@ -75,7 +75,7 @@ const PLUGINS = [
   {
     id: "pvpcorex", name: "PVPCoreX", jar: "PVPCoreX-1.0.0.jar", version: "1.0.0",
     category: "PvP", type: "Plugin",
-    desc: "The ultimate all-in-one PvP ecosystem — duels, bounties, KOTH, supply drops, and kill streaks.",
+    desc: "The ultimate all-in-one PvP ecosystem: duels, bounties, KOTH, supply drops, and kill streaks.",
     features: ["Duels", "Bounties", "KOTH", "Kill streaks"]
   },
   {
@@ -87,7 +87,7 @@ const PLUGINS = [
   {
     id: "staffmod", name: "StaffModerationPlus", jar: "StaffModerationPlus-1.0.0.jar", version: "2.0.0",
     category: "Staff", type: "Plugin",
-    desc: "Advanced staff moderation toolkit — bans, freeze, vanish, reports, alt detection, and more.",
+    desc: "Advanced staff moderation toolkit: bans, freeze, vanish, reports, alt detection, and more.",
     features: ["Ban & tempban", "Reports", "Alt detection", "Staff GUI"]
   },
   {
@@ -99,13 +99,13 @@ const PLUGINS = [
   {
     id: "ultimate-voice", name: "UltimateVoice", jar: "UltimateVoice-1.0.0.jar", version: "1.0.0",
     category: "Voice", type: "Plugin",
-    desc: "Enterprise-grade voice communication plugin — calls, groups, friends, and history.",
+    desc: "Enterprise-grade voice communication plugin: calls, groups, friends, and history.",
     features: ["Voice calls", "Voice groups", "Friends list"]
   },
   {
     id: "v0auth", name: "v0Auth", jar: "v0Auth-1.0.0.jar", version: "1.0.0",
     category: "Security", type: "Plugin",
-    desc: "Advanced authentication and security — SQL storage, CAPTCHA, rate limiting, and lockout.",
+    desc: "Advanced authentication and security: SQL storage, CAPTCHA, rate limiting, and lockout.",
     features: ["SQL storage", "CAPTCHA", "Rate limiting", "Folia-ready"]
   }
 ];
