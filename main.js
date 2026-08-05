@@ -279,33 +279,42 @@
   const wrap = canvas.parentElement;
 
   const ORBITALS = [
-    { tilt: 0,          speed: 1.0 },
+    { tilt: 0,            speed: 1.0 },
     { tilt: Math.PI / 3,  speed: .75 },
     { tilt: 2 * Math.PI / 3, speed: .55 }
   ];
-  const ELECTRONS = [
-    { name: 'Python',     img: 'images/skills/python.svg',     color: '#4b8bbe', orb: 0, phase: 0 },
-    { name: 'Node.js',    img: 'images/skills/nodejs.svg',     color: '#68a063', orb: 0, phase: Math.PI },
-    { name: 'Java',       img: 'images/skills/java.svg',       color: '#f89820', orb: 1, phase: 0 },
-    { name: 'JavaScript', img: 'images/skills/javascript.svg', color: '#f7df1e', orb: 1, phase: 2 * Math.PI / 3 },
-    { name: 'C++',        img: 'images/skills/cplusplus.svg',  color: '#5c8dc7', orb: 1, phase: 4 * Math.PI / 3 },
-    { name: 'HTML',       img: 'images/skills/html5.svg',      color: '#e44d26', orb: 2, phase: 0 },
-    { name: 'C#',         img: 'images/skills/csharp.svg',     color: '#a45cc9', orb: 2, phase: Math.PI }
+  const CENTER = { name: 'Java', img: 'images/skills/java.svg', color: '#f89820' };
+  const TIPS = [
+    { name: 'Python',     img: 'images/skills/python.svg',     color: '#4b8bbe', orb: 0, side: 0 },
+    { name: 'Node.js',    img: 'images/skills/nodejs.svg',     color: '#68a063', orb: 0, side: 1 },
+    { name: 'JavaScript', img: 'images/skills/javascript.svg', color: '#f7df1e', orb: 1, side: 0 },
+    { name: 'C++',        img: 'images/skills/cplusplus.svg',  color: '#5c8dc7', orb: 1, side: 1 },
+    { name: 'HTML',       img: 'images/skills/html5.svg',      color: '#e44d26', orb: 2, side: 0 },
+    { name: 'C#',         img: 'images/skills/csharp.svg',     color: '#a45cc9', orb: 2, side: 1 }
   ];
+  const DOTS = [
+    { orb: 0, phase: 0 }, { orb: 0, phase: Math.PI },
+    { orb: 1, phase: Math.PI / 3 }, { orb: 1, phase: 4 * Math.PI / 3 },
+    { orb: 2, phase: 2 * Math.PI / 3 }, { orb: 2, phase: 5 * Math.PI / 3 }
+  ];
+  const HOVER_CENTER = TIPS.length;
 
-  ELECTRONS.forEach(s => {
+  CENTER.imgEl = new Image();
+  CENTER.imgEl.onload = () => { CENTER.ready = true; };
+  CENTER.imgEl.src = CENTER.img;
+  TIPS.forEach(s => {
     s.imgEl = new Image();
     s.imgEl.onload = () => { s.ready = true; };
     s.imgEl.src = s.img;
   });
 
   let W = 0, H = 0, cx = 0, cy = 0, baseU = 0, unit = 0, zoom = 1;
-  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1, lastT = 0;
+  let rot = 0, vel = 0, dragging = false, lastX = 0, hover = -1;
   const pointers = new Map();
   let pinchDist = 0;
-  const MINZ = .6, MAXZ = 1.6;
+  const MINZ = .6, MAXZ = 1.7;
   const t0 = performance.now();
-  const trails = ELECTRONS.map(() => []);
+  const trails = DOTS.map(() => []);
 
   function applyZoom() { unit = baseU * zoom; }
   function zoomBy(f) {
@@ -329,17 +338,57 @@
 
   function wob(t, i) { return Math.sin(t * .4 + i * 2.1) * .05; }
 
-  function electronPos(s, t) {
-    const o = ORBITALS[s.orb];
-    const a = .62 * unit, b = .26 * unit;
-    const th = s.phase + o.speed * t + rot;
+  function tipPos(s) {
+    const ang = ORBITALS[s.orb].tilt + (s.side ? Math.PI : 0);
+    return { x: cx + Math.cos(ang) * .58 * unit, y: cy + Math.sin(ang) * .58 * unit };
+  }
+
+  function dotPos(o, phase, t) {
+    const a = .58 * unit, b = .25 * unit;
+    const th = phase + o.speed * t + rot;
     const ex = a * Math.cos(th);
     const ey = b * Math.sin(th);
-    const tilt = o.tilt + rot + wob(t, s.orb);
+    const tilt = o.tilt + rot + wob(t, ORBITALS.indexOf(o));
     return {
       x: cx + ex * Math.cos(tilt) - ey * Math.sin(tilt),
       y: cy + ex * Math.sin(tilt) + ey * Math.cos(tilt)
     };
+  }
+
+  function drawLogo(s, p, er, hot, t) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = '#0f0f16';
+    ctx.fillRect(p.x - er, p.y - er, er * 2, er * 2);
+    if (s.ready) {
+      const s2 = er * 1.8;
+      ctx.drawImage(s.imgEl, p.x - s2 / 2, p.y - s2 / 2, s2, s2);
+    } else {
+      ctx.fillStyle = s.color;
+      ctx.fillRect(p.x - er * .5, p.y - er * .5, er, er);
+    }
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = hot ? '#fff' : s.color;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(p.x - er * .35, p.y - er * .35, er * .22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.fill();
+    if (hot) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, er + 5 + Math.sin(t * 6) * 2.5, 0, Math.PI * 2);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,.45)';
+      ctx.stroke();
+    }
+    ctx.font = Math.round(Math.max(9, unit * .08)) + "px 'JetBrains Mono', monospace";
+    ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
+    ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .08));
   }
 
   function draw(t) {
@@ -347,44 +396,20 @@
 
     for (let i = 0; i < ORBITALS.length; i++) {
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .62 * unit, .26 * unit, ORBITALS[i].tilt + rot + wob(t, i), 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + rot + wob(t, i), 0, Math.PI * 2);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'rgba(255,255,255,.08)';
       ctx.stroke();
       ctx.beginPath();
-      ctx.ellipse(cx, cy, .62 * unit, .26 * unit, ORBITALS[i].tilt + rot + wob(t, i) + .04, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, .58 * unit, .25 * unit, ORBITALS[i].tilt + rot + wob(t, i) + .04, 0, Math.PI * 2);
       ctx.lineWidth = .5;
       ctx.strokeStyle = 'rgba(255,255,255,.04)';
       ctx.stroke();
     }
 
-    const pulse = 1 + Math.sin(t * 1.4) * .04;
-    const nr = .11 * unit * pulse;
-    ctx.beginPath(); ctx.arc(cx, cy, nr, 0, Math.PI * 2);
-    ctx.fillStyle = '#dc2626';
-    ctx.fill();
-    ctx.beginPath(); ctx.arc(cx, cy, nr * .55, 0, Math.PI * 2);
-    ctx.fillStyle = '#0a0a10';
-    ctx.fill();
-    for (let i = 0; i < 3; i++) {
-      const ang = i * 2 * Math.PI / 3 + t * .8;
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(ang) * nr * 1.5, cy + Math.sin(ang) * nr * 1.5, nr * .24, 0, Math.PI * 2);
-      ctx.fillStyle = '#1c1c26';
-      ctx.fill();
-    }
-    ctx.font = '600 ' + Math.round(Math.max(10, unit * .085)) + "px 'JetBrains Mono', monospace";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fca5a5';
-    ctx.fillText('Crowz', cx, cy + nr + Math.max(12, unit * .09));
-
-    for (let i = 0; i < ELECTRONS.length; i++) {
-      const s = ELECTRONS[i];
-      const p = electronPos(s, t);
-      const breath = 1 + Math.sin(t * 2 + s.phase * 3) * .06;
-      const er = Math.max(8, .12 * unit) * breath * (i === hover ? 1.3 : 1);
-      const hot = i === hover;
-
+    for (let i = 0; i < DOTS.length; i++) {
+      const d = DOTS[i];
+      const p = dotPos(d, d.phase, t);
       if (!reduced) {
         trails[i].push({ x: p.x, y: p.y });
         if (trails[i].length > 12) trails[i].shift();
@@ -392,54 +417,45 @@
         for (let k = 0; k < tr.length; k++) {
           const f = (k + 1) / tr.length;
           ctx.beginPath();
-          ctx.arc(tr[k].x, tr[k].y, .5 + 2.5 * f, 0, Math.PI * 2);
-          ctx.fillStyle = s.color;
-          ctx.globalAlpha = .28 * f;
+          ctx.arc(tr[k].x, tr[k].y, .5 + 2 * f, 0, Math.PI * 2);
+          ctx.fillStyle = '#fca5a5';
+          ctx.globalAlpha = .3 * f;
           ctx.fill();
           ctx.globalAlpha = 1;
         }
       }
-
-      ctx.save();
+      const dr = Math.max(3, .032 * unit);
       ctx.beginPath();
-      ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.fillStyle = '#0f0f16';
-      ctx.fillRect(p.x - er, p.y - er, er * 2, er * 2);
-      if (s.ready) {
-        const s2 = er * 1.8;
-        ctx.drawImage(s.imgEl, p.x - s2 / 2, p.y - s2 / 2, s2, s2);
-      } else {
-        ctx.fillStyle = s.color;
-        ctx.fillRect(p.x - er * .5, p.y - er * .5, er, er);
-      }
-      ctx.restore();
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, er, 0, Math.PI * 2);
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = hot ? '#fff' : s.color;
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(p.x - er * .35, p.y - er * .35, er * .22, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.arc(p.x, p.y, dr, 0, Math.PI * 2);
+      ctx.fillStyle = '#fca5a5';
       ctx.fill();
-      if (hot) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, er + 5 + Math.sin(t * 6) * 2.5, 0, Math.PI * 2);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(255,255,255,.45)';
-        ctx.stroke();
-      }
-      ctx.font = Math.round(Math.max(9, unit * .085)) + "px 'JetBrains Mono', monospace";
-      ctx.fillStyle = hot ? '#fff' : '#eaeaf2';
-      ctx.fillText(unit < 190 ? s.name.replace(/^(Node\.js|JavaScript)$/, m => m === 'Node.js' ? 'Node' : 'JS') : s.name, p.x, p.y + er + Math.max(10, unit * .08));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, dr * .4, 0, Math.PI * 2);
+      ctx.fillStyle = '#0a0a10';
+      ctx.fill();
+    }
+
+    const hotCenter = hover === HOVER_CENTER;
+    const cer = .19 * unit * (hotCenter ? 1.12 : 1);
+    ctx.strokeStyle = 'rgba(220,38,38,.65)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cer + 8 + Math.sin(t * 3) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+    drawLogo(CENTER, { x: cx, y: cy }, cer, hotCenter, t);
+
+    for (let i = 0; i < TIPS.length; i++) {
+      const s = TIPS[i];
+      const p = tipPos(s);
+      const hot = i === hover;
+      const er = .135 * unit * (hot ? 1.2 : 1) * (1 + Math.sin(t * 1.6 + i) * .04);
+      drawLogo(s, p, er, hot, t);
     }
   }
 
   function loop(now) {
     requestAnimationFrame(loop);
     const t = reduced ? 0 : (now - t0) / 1000;
-    lastT = t;
     if (!dragging) {
       rot += vel;
       vel *= .96;
@@ -487,15 +503,17 @@
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    const R = Math.max(8, .12 * unit) + 10;
     let best = -1, bestD = Infinity;
-    for (let i = 0; i < ELECTRONS.length; i++) {
-      const p = electronPos(ELECTRONS[i], lastT);
-      const d = Math.hypot(p.x - mx, p.y - my);
-      if (d < bestD) { bestD = d; best = i; }
+    const spots = [
+      ...TIPS.map((s, i) => ({ i, p: tipPos(s), r: Math.max(8, .135 * unit) + 10 })),
+      { i: HOVER_CENTER, p: { x: cx, y: cy }, r: Math.max(10, .19 * unit) + 10 }
+    ];
+    for (const spot of spots) {
+      const d = Math.hypot(spot.p.x - mx, spot.p.y - my);
+      if (d < spot.r && d < bestD) { bestD = d; best = spot.i; }
     }
-    hover = bestD <= R ? best : -1;
-    canvas.style.cursor = hover >= 0 ? 'pointer' : 'grab';
+    hover = best;
+    canvas.style.cursor = best >= 0 ? 'pointer' : 'grab';
   });
   function endPointer(e) {
     pointers.delete(e.pointerId);
