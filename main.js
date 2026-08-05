@@ -702,6 +702,7 @@
   if (!el) return;
   const phrases = [
     'Minecraft Plugin Developer',
+    '13 Year Old Developer',
     'Owner of Enclave SMP',
     'Security & Performance',
     '18+ Free Verified Plugins',
